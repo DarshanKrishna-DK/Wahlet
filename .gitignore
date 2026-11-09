@@ -1,0 +1,45 @@
+.reference/
+.local/
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+artifacts/
+*.log
+*.sqlite
+*.sqlite-*
+.DS_Store
+# Private planning, agent setup, and workstation integrations
+/docs/
+/.agents/
+/.codex/
+/.aws/
+/AGENTS.md
+/.taste-skill/
+/.vscode/
+/.idea/
+/checks/browser-act.mjs
+/checks/browser-open-owner.mjs
+/checks/tooling-handshakes.mjs
+/checks/testnet-wallet-setup.mjs
+
+# Superseded illustration authoring sources depend on private tooling
+/scripts/build-scenes.mjs
+/scripts/build-gate.mjs
+/apps/web/src/components/PaymentGate.tsx
+/apps/web/src/generated/
+
+# Local credentials, caches, and build output
+*.pem
+*.key
+*.p12
+*.pfx
+*.tsbuildinfo
+*.db
+*.db-*
+.cache/
+.tmp/
+tmp/
+Thumbs.db
