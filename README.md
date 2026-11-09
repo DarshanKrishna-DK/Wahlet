@@ -89,6 +89,24 @@ Build first, then add this server to your client configuration. Replace the abso
 
 The stdio process connects to the running local daemon. It does not run tests, start another signer, or reset budgets. Start with: "Check my Wahlet balances and show my spending report."
 
+### Try it in your assistant
+
+Open `/install` in the running website for Claude Desktop, Claude Code, Codex, ChatGPT, or Cursor instructions. Once Wahlet appears in your assistant tool list, paste these prompts into that assistant. The handbook provides copyable prompts; it does not execute wallet operations.
+
+**Inspect the wallet:**
+
+> Use Wahlet to show my wallet address, network, WBT and USDT balances, and spending report. Do not send a payment.
+
+**Get funding instructions:**
+
+> Use Wahlet request_funding to show the agent wallet address and supported assets. Do not transfer funds or ask for my private key.
+
+**Try the included paid API**, after funding, unlocking, and approving the bounded allowance:
+
+> Use Wahlet x402_fetch to fetch http://127.0.0.1:4021/premium/insight once. Pay only if the offer is 0.001 USDT on Whitechain Sepolia and my policy permits it. Return the resource, operation ID, and transaction receipt. If interrupted, reuse the same operation ID.
+
+An external paid API must offer the configured network, token, and payment scheme, and its HTTPS origin must be approved locally. A public demo on another chain cannot replace this example merely because it uses x402. A facilitator settles payments; it is not itself the paid resource endpoint.
+
 ## Network and receipts
 
 | Setting | Value |
