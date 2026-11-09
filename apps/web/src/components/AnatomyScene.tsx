@@ -3,10 +3,10 @@ import './ceramic-scenes.css';
 
 export type SceneKind = 'hero' | 'wallet' | 'policy' | 'receipt';
 const descriptions: Record<SceneKind, string> = {
-  hero: 'A cream and pink robot takes a card from its visible wallet, walks to an API terminal, pays, collects a printed receipt, and stores it in its back pocket. Illustrative animation.',
-  wallet: 'A cream and pink robot lifts a payment card from a stitched lilac wallet, checks it, and returns it to the wallet. Illustrative animation.',
-  policy: 'A cream and pink robot presents a payment card to an authorization station. Its lock opens after the card is checked. Illustrative animation.',
-  receipt: 'A cream and pink robot takes a paper receipt from a small rounded printer and places it in its back pocket. Illustrative animation.',
+  hero: 'Three small white and light-purple agents queue at an API terminal. The happy first agent taps a card, then the terminal prints a receipt. The waiting agents glance toward the viewer. Illustrative animation.',
+  wallet: 'A white and light-purple agent pulls a payment card from inside its wallet, holds it clear, and returns it through the opening. Illustrative animation.',
+  policy: 'A white and light-purple agent taps its card against an authorization reader. The lock opens after contact. Illustrative animation.',
+  receipt: 'A printer feeds a receipt outward. A white and light-purple agent grasps the paper, turns, and places it inside a small bag. Illustrative animation.',
 };
 export default function AnatomyScene({ kind = 'hero' }: { kind?: SceneKind }) {
   const host = useRef<HTMLDivElement>(null);

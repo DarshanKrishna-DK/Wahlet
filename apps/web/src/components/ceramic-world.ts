@@ -10,7 +10,6 @@ const ease = (v: number) => { const t = THREE.MathUtils.clamp(v, 0, 1); return t
 const blend = (a: V3, b: V3, t: number): V3 => a.map((v, i) => THREE.MathUtils.lerp(v, b[i], ease(t))) as V3;
 
 export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady: () => void, onUnavailable: () => void, stillPose?: number) {
-  let emotion = 0;
   let receiptPhase = 'idle';
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power', preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
@@ -25,7 +24,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-3.1, 3.1, 2.6, -2.6, .1, 70);
   camera.position.set(5.5, 4.4, 11);
-  camera.lookAt(0, 1.35, 0);
+  camera.lookAt(kind === 'hero' ? -.15 : 0, kind === 'hero' ? .74 : .88, 0);
   const environment = new RoomEnvironment();
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environmentMap = pmrem.fromScene(environment, .045);
@@ -37,11 +36,11 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     const value = new THREE.MeshPhysicalMaterial({ color, roughness, metalness, clearcoat: .4, clearcoatRoughness: .25, ...extra });
     materials.push(value); return value;
   };
-  const ceramic = material('#fffaf3', .25), pearl = material('#d8d5e1', .32), lilac = material('#c6b5ef', .34), violet = material('#806697', .43);
+  const ceramic = material('#ffffff', .25), pearl = material('#d8d5e1', .32), lilac = material('#c6b5ef', .34), violet = material('#806697', .43);
   const dark = material('#181b25', .4, .02), lens = material('#111723', .27, 0, { clearcoat: .8 });
-  const gold = material('#dfca9a', .34, .6), ink = material('#797086', .65);
-  const paper = material('#fffdf4', .78, 0, { clearcoat: 0, side: THREE.DoubleSide });
-  const green = material('#c1d9c0', .35, 0, { emissive: '#93af8f', emissiveIntensity: .15 });
+  const gold = material('#d8d5e8', .34, .2), ink = material('#797086', .65);
+  const paper = material('#ffffff', .78, 0, { clearcoat: 0, side: THREE.DoubleSide });
+  const green = material('#eee8ff', .35, 0, { emissive: '#c6b5ef', emissiveIntensity: .3 });
   scene.add(new THREE.HemisphereLight(0xf7edff, 0x55465e, .8));
   const key = new THREE.DirectionalLight(0xfff3df, 2.6);
   key.position.set(-3, 9, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
@@ -57,10 +56,10 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   shadowContext.fillStyle = shadowGradient; shadowContext.fillRect(0, 0, 128, 128);
   const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
   const shadowMaterial = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false });
-  const contactPositions: Record<SceneKind, V3[]> = { hero: [[-1.12, 0, .05], [1.29, 0, -.05]], wallet: [[.5, 0, .22], [-.85, 0, .5]], policy: [[-1.05, 0, .1], [1.25, 0, .1]], receipt: [[.85, 0, .25], [-.85, 0, .45]] };
+  const contactPositions: Record<SceneKind, V3[]> = { hero: [[-1.7, 0, -.16], [-.85, 0, -.03], [.05, 0, .2], [1.25, 0, -.04]], wallet: [[-.6, 0, 0], [.307, 0, .267]], policy: [[-.45, 0, .2], [.85, 0, -.04]], receipt: [[.25, 0, .2], [-.7, 0, .2], [.95, 0, .04]] };
   const contactShadows: THREE.Mesh[] = [];
   for (const position of contactPositions[kind]) {
-    const contact = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 1.9), shadowMaterial);
+    const contact = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.15), shadowMaterial);
     contact.rotation.x = -Math.PI / 2; contact.position.set(...position); contact.position.y = -.025; scene.add(contact); contactShadows.push(contact);
   }
   const mesh = (parent: THREE.Object3D, geometry: THREE.BufferGeometry, mat: Material, position: V3 = [0, 0, 0]) => {
@@ -109,23 +108,24 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   }
   function character(parent: THREE.Object3D) {
     const root = group(parent), unit = .95; root.name = 'robot';
-    const cream = new THREE.MeshPhysicalMaterial({ color: 0xffeee5, metalness: .03, roughness: .3, clearcoat: .8 });
-    const rose = new THREE.MeshPhysicalMaterial({ color: 0xc890a2, metalness: .08, roughness: .34, clearcoat: .65 });
+    const cream = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: .03, roughness: .3, clearcoat: .8 });
+    const outfit = new THREE.MeshPhysicalMaterial({ color: 0xc6b5ef, metalness: .08, roughness: .34, clearcoat: .65 });
     const screen = new THREE.MeshStandardMaterial({ color: 0x191821, roughness: .2 });
-    const lit = new THREE.MeshStandardMaterial({ color: 0xffc6df, emissive: 0xa43d78, emissiveIntensity: .6 });
-    materials.push(cream, rose, screen, lit);
+    const lit = new THREE.MeshStandardMaterial({ color: 0xf4efff, emissive: 0x9985cf, emissiveIntensity: .6 });
+    materials.push(cream, outfit, screen, lit);
     const robotBox = (parent: THREE.Object3D, size: V3, position: V3, mat: Material, radius: number) =>
       mesh(parent, new RoundedBoxGeometry(...size.map(v => v * unit) as V3, 5, Math.min(radius, ...size.map(v => v / 3)) * unit), mat, position.map(v => v * unit) as V3);
     const feet: THREE.Group[] = [];
     for (const side of [-1, 1]) {
       const foot = group(root); feet.push(foot);
-      mesh(foot, new THREE.CylinderGeometry(.07 * unit, .075 * unit, .31 * unit, 10), rose, [side * .2 * unit, .315 * unit, 0]);
+      mesh(foot, new THREE.CylinderGeometry(.07 * unit, .075 * unit, .31 * unit, 10), outfit, [side * .2 * unit, .315 * unit, 0]);
       robotBox(foot, [.25, .12, .38], [side * .2, .07, .055], cream, .05);
     }
-    robotBox(root, [.67, .42, .56], [0, .63, 0], rose, .12);
-    robotBox(root, [.22, .09, .035], [0, .66, .3], cream, .02);
-    robotBox(root, [.24, .08, .24], [0, .855, 0], cream, .035);
-    const headRestY = 1.23 * unit, head = group(root, [0, headRestY, 0]); head.name = 'head';
+    const body = group(root);
+    robotBox(body, [.67, .42, .56], [0, .63, 0], outfit, .12);
+    robotBox(body, [.22, .09, .035], [0, .66, .3], cream, .02);
+    robotBox(body, [.24, .08, .24], [0, .855, 0], cream, .035);
+    const headRestY = 1.23 * unit, head = group(body, [0, headRestY, 0]); head.name = 'head';
     robotBox(head, [1.02, .75, .76], [0, 0, 0], cream, .2);
     robotBox(head, [.84, .48, .07], [0, 0, .395], screen, .14);
     const pupils = group(head), eyes: THREE.Mesh[] = [];
@@ -133,21 +133,21 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     const mouth = group(head, [0, -.12 * unit, .44 * unit]);
     robotBox(mouth, [.15, .025, .02], [0, -.015, 0], lit, .008);
     for (const side of [-1, 1]) robotBox(mouth, [.075, .025, .02], [side * .095, .005, 0], lit, .008).rotation.z = side * .55;
-    mesh(head, new THREE.CylinderGeometry(.025 * unit, .025 * unit, .17 * unit, 8), rose, [0, .45 * unit, 0]);
+    mesh(head, new THREE.CylinderGeometry(.025 * unit, .025 * unit, .17 * unit, 8), outfit, [0, .45 * unit, 0]);
     mesh(head, new THREE.SphereGeometry(.065 * unit, 12, 8), lit, [0, .56 * unit, 0]);
     const pocketSide = kind === 'receipt' ? -1 : 1;
-    const pocket = group(root, [pocketSide * .28, .46, -.32]); pocket.visible = kind === 'receipt' || kind === 'hero';
-    round(pocket, [.28, .23, .035], [0, 0, 0], .035, rose);
-    round(pocket, [.28, .20, .035], [0, -.015, -.10], .035, rose);
-    for (const side of [-1, 1]) round(pocket, [.025, .19, .10], [side * .127, -.015, -.05], .01, rose);
-    round(pocket, [.25, .025, .10], [0, -.105, -.05], .01, rose);
+    const pocket = group(body, [pocketSide * .28, .46, -.32]); pocket.visible = false;
+    round(pocket, [.28, .23, .035], [0, 0, 0], .035, outfit);
+    round(pocket, [.28, .20, .035], [0, -.015, -.10], .035, outfit);
+    for (const side of [-1, 1]) round(pocket, [.025, .19, .10], [side * .127, -.015, -.05], .01, outfit);
+    round(pocket, [.25, .025, .10], [0, -.105, -.05], .01, outfit);
     const hands: THREE.Group[] = [], sleeves: THREE.Group[] = [], armJoints: THREE.Vector3[][] = [];
     const sleeveLength = .32;
     for (const side of [-1, 1]) {
-      const sleeve = group(root, [side * .41 * unit, .73 * unit, 0]); sleeves.push(sleeve);
+      const sleeve = group(body, [side * .41 * unit, .73 * unit, 0]); sleeves.push(sleeve);
       round(sleeve, [.145, .265, .16], [0, -.12, 0], .055, cream);
       const hand = group(sleeve, [0, -sleeveLength, 0]); hands.push(hand);
-      round(hand, [.15, .13, .17], [0, .015, 0], .05, rose);
+      round(hand, [.15, .13, .17], [0, .015, 0], .05, outfit);
       for (const finger of [-1, 1]) round(hand, [.055, .075, .10], [finger * .035, -.045, .025], .024, cream);
     }
     function poseSleeve(index: number, direction: V3) {
@@ -159,20 +159,20 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     poseSleeve(0, [-.12, -1, .12]); poseSleeve(1, [.12, -1, .12]);
     function lookAtPoint(world: V3) {
       root.updateWorldMatrix(true, false);
-      const target = root.worldToLocal(new THREE.Vector3(...world)).sub(head.position);
+      const target = body.worldToLocal(new THREE.Vector3(...world)).sub(head.position);
       const yaw = THREE.MathUtils.clamp(Math.atan2(target.x, target.z), -.65, .65);
       const pitch = THREE.MathUtils.clamp(Math.atan2(-target.y, Math.hypot(target.x, target.z)) * .42, -.2, .34);
       head.rotation.set(pitch, yaw, -yaw * .04); pupils.position.set(yaw * .075, -pitch * .045, 0);
     }
-    return { root, head, headRestY, eyes, hands, feet, armJoints, poseSleeve, lookAtPoint, mouth };
+    return { root, body, head, headRestY, eyes, hands, feet, armJoints, poseSleeve, lookAtPoint, mouth };
   }
   function receipt(parent: THREE.Object3D, width = .55, height = .85) {
     const root = group(parent), shape = new THREE.Shape(); shape.moveTo(-width / 2, 0); shape.lineTo(width / 2, 0);
     for (let i = 0; i <= 10; i++) shape.lineTo(width / 2 - width * i / 10, height - (i % 2) * .035);
     shape.closePath(); const sheet = mesh(root, new THREE.ShapeGeometry(shape, 8), paper), positions = sheet.geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) positions.setZ(i, Math.sin(positions.getY(i) / height * Math.PI) * height * .08);
-    sheet.geometry.computeVertexNormals(); check(root, [0, height * .76, .065], .7, violet);
-    for (let i = 0; i < 4; i++) { const y = height * .17 + i * .095; round(root, [width * (i === 3 ? .35 : .58), .012, .008], [-.025, y, Math.sin(y / height * Math.PI) * height * .08 + .009], .004, ink); }
+    sheet.geometry.computeVertexNormals(); check(root, [0, height * .76, height * .08 + .008], Math.min(.7, width * 1.8), violet);
+    for (let i = 0; i < 4; i++) { const y = height * (.14 + i * .14); round(root, [width * (i === 3 ? .35 : .58), .012, .008], [-.025, y, Math.sin(y / height * Math.PI) * height * .08 + .009], .004, ink); }
     return root;
   }
   function paperFeed(slip: THREE.Group, level: number) {
@@ -187,205 +187,190 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     });
     return (feeding: boolean) => { plane.constant = feeding ? -level : 100; };
   }
-  function terminal(parent: THREE.Object3D) {
-    const root = group(parent); round(root, [1.05, 1.95, .78], [0, 1.08, 0], .19, ceramic);
-    round(root, [.92, .13, .7], [0, .12, 0], .065, violet);
-    round(root, [.8, .58, .075], [0, 1.56, .4], .1, pearl); round(root, [.69, .46, .06], [0, 1.57, .446], .07, lens);
-    const canvas = document.createElement('canvas'); canvas.width = 384; canvas.height = 192;
-    const context = canvas.getContext('2d')!; context.fillStyle = '#121722'; context.fillRect(0, 0, 384, 192);
-    context.fillStyle = '#f3eaff'; context.font = '500 72px monospace'; context.textAlign = 'center'; context.fillText('API', 192, 120);
-    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
-    const display = material('#ffffff', .5, 0, { map: texture, emissiveMap: texture, emissive: '#ffffff', emissiveIntensity: .3 });
-    mesh(root, new THREE.PlaneGeometry(.58, .3), display, [0, 1.57, .479]);
-    round(root, [.46, .34, .06], [0, 1.01, .42], .08, lilac);
-    for (let i = 0; i < 3; i++) curve(root, [[-.07 + i * .045, .96 - i * .022, .457], [-.035 + i * .045, 1.01, .461], [-.07 + i * .045, 1.06 + i * .022, .457]], .008, ceramic);
-    round(root, [.63, .055, .035], [0, .67, .412], .022, dark);
-    for (let i = 0; i < 5; i++) round(root, [.36, .022, .016], [-.055, .27 + i * .052, .401], .01, pearl);
-    const lamp = ball(root, [.035, .035, .016], [.32, .42, .41], lilac);
-    for (const x of [-.35, .35]) for (const z of [-.22, .22]) round(root, [.14, .13, .14], [x, .04, z], .055, dark);
-    return { root, lamp };
-  }
-
-  const companion = character(stage), timers: ((time: number) => void)[] = [];
-  const worldPoint = (point: V3): V3 => { companion.root.updateWorldMatrix(true, false); const p = companion.root.localToWorld(new THREE.Vector3(...point)); return [p.x, p.y, p.z]; };
-  const palmPoint = (index: number) => { companion.root.updateWorldMatrix(true, true); return companion.hands[index].getWorldPosition(new THREE.Vector3()); };
-  const placeInPalm = (object: THREE.Object3D, index: number, grip: V3, yaw = 0) => {
-    object.rotation.set(0, companion.root.rotation.y + yaw, 0);
-    object.position.copy(palmPoint(index)).sub(new THREE.Vector3(...grip).applyEuler(object.rotation));
+  type Agent = ReturnType<typeof character>;
+  const companion = character(stage), agents: Agent[] = [companion];
+  const timers: ((time: number) => void)[] = [];
+  const idleLeft: V3 = [-.12, -1, .12], idleRight: V3 = [.12, -1, .12];
+  let contactGap: number | null = null, contact = false, printedHeight = 0, concealedFraction: number | null = null;
+  let paperOwner: 'printer' | 'agent' | 'bag' | 'tray' | null = null;
+  const vector = (value: THREE.Vector3): V3 => [value.x, value.y, value.z];
+  const palm = (agent: Agent, index: number) => { agent.root.updateWorldMatrix(true, true); return agent.hands[index].getWorldPosition(new THREE.Vector3()); };
+  const placeHeld = (object: THREE.Object3D, agent: Agent, index: number, grip: V3, yaw: number) => {
+    object.rotation.set(0, yaw, 0);
+    object.position.copy(palm(agent, index)).sub(new THREE.Vector3(...grip).multiplyScalar(agent.root.scale.x).applyEuler(object.rotation));
   };
   const path = (time: number, keys: [number, V3][]) => {
     for (let i = 1; i < keys.length; i++) if (time <= keys[i][0]) return blend(keys[i - 1][1], keys[i][1], (time - keys[i - 1][0]) / (keys[i][0] - keys[i - 1][0]));
     return keys[keys.length - 1][1];
   };
-  const restLeft: V3 = [-.10, -1, .12], restRight: V3 = [.10, -1, .12];
-  const spriteMaterials: THREE.SpriteMaterial[] = [];
-  const bubbleCanvas = document.createElement('canvas'); bubbleCanvas.width = 256; bubbleCanvas.height = 192;
-  const bubbleContext = bubbleCanvas.getContext('2d')!;
-  bubbleContext.fillStyle = '#fff8f0'; bubbleContext.beginPath(); bubbleContext.roundRect(20, 16, 216, 130, 60); bubbleContext.fill();
-  bubbleContext.beginPath(); bubbleContext.arc(67, 153, 15, 0, TAU); bubbleContext.arc(47, 179, 7, 0, TAU); bubbleContext.fill();
-  bubbleContext.strokeStyle = '#af8194'; bubbleContext.lineWidth = 10; bubbleContext.lineCap = 'round'; bubbleContext.lineJoin = 'round';
-  bubbleContext.beginPath();
-  if (kind === 'wallet') { bubbleContext.roundRect(89, 48, 80, 62, 12); bubbleContext.moveTo(139, 69); bubbleContext.lineTo(170, 69); bubbleContext.lineTo(170, 91); bubbleContext.lineTo(139, 91); bubbleContext.closePath(); }
-  else if (kind === 'receipt') { bubbleContext.moveTo(91, 52); bubbleContext.lineTo(165, 52); bubbleContext.lineTo(165, 113); bubbleContext.lineTo(91, 113); bubbleContext.closePath(); bubbleContext.moveTo(108, 72); bubbleContext.lineTo(147, 72); bubbleContext.moveTo(108, 91); bubbleContext.lineTo(136, 91); }
-  else if (kind === 'policy') { bubbleContext.moveTo(91, 78); bubbleContext.lineTo(117, 102); bubbleContext.lineTo(166, 53); }
-  else { for (const x of [93, 128, 163]) { bubbleContext.moveTo(x + 5, 80); bubbleContext.arc(x, 80, 5, 0, TAU); } }
-  bubbleContext.stroke();
-  const bubbleTexture = new THREE.CanvasTexture(bubbleCanvas); bubbleTexture.colorSpace = THREE.SRGBColorSpace;
-  const bubbleMaterial = new THREE.SpriteMaterial({ map: bubbleTexture, transparent: true, depthWrite: false, toneMapped: false }); spriteMaterials.push(bubbleMaterial);
-  const thought = new THREE.Sprite(bubbleMaterial); thought.scale.set(.66, .50, 1); stage.add(thought);
-  const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-  let walking = false;
-  const footLift = [0, 0];
-  const mood = (time: number, pleased: number) => {
-    emotion = pleased; companion.mouth.scale.set(1 + pleased * .12, 1 + pleased * .30, 1);
-    thought.position.set(...worldPoint([0, companion.headRestY + .65 + Math.sin(time * .8) * .015, 0])).addScaledVector(cameraRight, .70);
-    thought.material.opacity = .68 + pleased * .26;
-
-    contactShadows[0].position.x = companion.root.position.x; contactShadows[0].position.z = companion.root.position.z;
+  const face = (agent: Agent, time: number, expression: 'happy' | 'curious' | 'patient') => {
+    const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60);
+    agent.eyes.forEach((eye, i) => { eye.scale.y = (1 - blink * .92) * (expression === 'happy' ? .82 : expression === 'curious' && i === 0 ? .65 : 1); });
+    agent.mouth.scale.set(1, expression === 'patient' ? .22 : expression === 'curious' ? .72 : 1.18, 1);
+    agent.mouth.rotation.z = expression === 'curious' ? .12 : 0;
+    agent.head.position.y = agent.headRestY + Math.sin(time * 1.3) * .008;
   };
-  const walkBetween = (time: number, start: number, end: number, from: V3, to: V3, yaw: number, steps = 6) => {
-    const progress = THREE.MathUtils.clamp((time - start) / (end - start), 0, 1), phase = progress * steps;
-    companion.root.position.fromArray(from).lerp(new THREE.Vector3(...to), progress);
-    companion.root.rotation.y = yaw;
-    walking = time > start && time < end;
-    const delta = new THREE.Vector3(...to).sub(new THREE.Vector3(...from));
-    const inverse = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -yaw);
-    for (let i = 0; i < 2; i++) {
-      const shifted = phase - i;
-      const stride = shifted < 0 ? 0 : Math.floor(shifted / 2);
-      const local = shifted < 0 ? 0 : shifted - stride * 2;
-      const advance = shifted < 0 ? 0 : (stride * 2 + 2 * ease(Math.min(local, 1))) / steps;
-      footLift[i] = shifted < 0 || local >= 1 ? 0 : Math.sin(local * Math.PI) * .095;
-      const offset = delta.clone().multiplyScalar(advance - progress).applyQuaternion(inverse);
-      companion.feet[i].position.set(offset.x, footLift[i], offset.z);
-    }
-  };
-  const extractDirection = (lift: number): V3 => {
-    const phase = ease(lift), x = .65 * phase, y = .08 + .27 * phase; return [x, y, Math.sqrt(1 - x * x - y * y)];
-  };
-  const cardGrip: V3 = [.23, .12, -.02];
-  const addWallet = () => {
-    const purse = wallet(companion.root); purse.name = 'wallet'; purse.scale.setScalar(.48); purse.position.set(.1595, .45, .33);
-    curve(companion.root, [[-.24, .78, .28], [-.07, .66, .29], [.11, .54, .31]], .021, lilac);
-    return purse;
-  };
-  const cycle = kind === 'hero' ? 22 : kind === 'receipt' ? 10 : kind === 'policy' ? 11 : 9;
-  let stillTime = 7.7;
+  function openContainer(parent: THREE.Object3D, center: V3, width: number, height: number, depth: number) {
+    const root = group(parent, center); root.name = 'wallet';
+    round(root, [width, height, .035], [0, 0, -depth / 2], .055, violet);
+    round(root, [width, height, .035], [0, 0, depth / 2], .055, lilac);
+    for (const side of [-1, 1]) round(root, [.035, height - .025, depth], [side * (width / 2 - .0175), 0, 0], .012, violet);
+    round(root, [width - .035, .035, depth], [0, -height / 2 + .0175, 0], .012, violet);
+    for (let i = 0; i < 9; i++) round(root, [.025, .008, .006], [-width * .36 + i * width * .09, -height * .36, depth / 2 + .020], .003, ceramic);
+    round(root, [.13, .10, .025], [width * .28, -.02, depth / 2 + .025], .025, violet);
+    ball(root, [.023, .023, .008], [width * .28, -.02, depth / 2 + .043], pearl);
+    return root;
+  }
+  function readerAt(cardAtContact: THREE.Group, cardScale: number, machine: THREE.Group, machineAnchor: V3) {
+    const halfDepth = .055 * cardScale / 2;
+    const plane = cardAtContact.position.z - halfDepth;
+    const reader = group(stage, [cardAtContact.position.x, cardAtContact.position.y, plane - .035]); reader.name = 'reader';
+    round(reader, [.20, .16, .07], [0, 0, 0], .035, pearl);
+    round(reader, [.17, .13, .008], [0, 0, .039], .025, lilac);
+    // The exposed reader face is the actual contact plane.
+    const faceZ = plane + .008;
+    for (let i = 0; i < 2; i++) curve(reader, [[-.015 + i * .026, -.035, .045], [.008 + i * .026, 0, .045], [-.015 + i * .026, .035, .045]], .004, ceramic);
+    const start = machine.localToWorld(new THREE.Vector3(...machineAnchor));
+    rod(stage, vector(start), [reader.position.x + .07, reader.position.y, reader.position.z - .01], .036, pearl);
+    return { root: reader, plane: faceZ };
+  }
+  function apiMachine() {
+    const root = group(stage, [1.25, 0, -.04]); root.name = 'terminal';
+    round(root, [.62, 1.14, .54], [0, .66, 0], .13, ceramic);
+    round(root, [.61, .11, .52], [0, .095, 0], .045, violet);
+    round(root, [.49, .32, .04], [0, .96, .284], .05, lens);
+    const canvas = document.createElement('canvas'); canvas.width = 240; canvas.height = 120;
+    const context = canvas.getContext('2d')!; context.fillStyle = '#11131b'; context.fillRect(0, 0, 240, 120);
+    context.fillStyle = '#ffffff'; context.font = '500 54px monospace'; context.textAlign = 'center'; context.fillText('API', 120, 80);
+    const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+    mesh(root, new THREE.PlaneGeometry(.41, .205), material('#ffffff', .5, 0, { map: texture, emissiveMap: texture, emissive: '#ffffff', emissiveIntensity: .2 }), [0, .96, .307]);
+    round(root, [.32, .035, .04], [0, .42, .286], .012, dark);
+    round(root, [.42, .035, .24], [0, .16, .35], .012, pearl);
+    round(root, [.42, .12, .035], [0, .205, .455], .015, lilac);
+    for (let i = 0; i < 4; i++) round(root, [.27, .012, .008], [0, .54 + i * .044, .277], .005, pearl);
+    const lamp = ball(root, [.023, .023, .012], [.21, .69, .28], lilac);
+    return { root, lamp };
+  }
+  const cycle = kind === 'hero' ? 8 : kind === 'wallet' ? 8 : kind === 'policy' ? 7 : 10;
+  let stillTime = 2.6;
   if (kind === 'hero') {
-    const machine = terminal(stage); machine.root.name = 'terminal'; machine.root.scale.setScalar(.75); machine.root.position.set(.8, 0, -.15);
-    round(machine.root, [.44, .035, .35], [.15, .65, .53], .015, pearl);
-    const purse = addWallet(), payment = card(stage); payment.name = 'payment-card'; payment.scale.setScalar(.50);
-    const home: V3 = [-.90, 0, .80], arrived: V3 = [1.55, 0, .72], departure: V3 = [1.55, 0, .94];
-    const pickup: V3 = [0, .35, Math.sqrt(1 - .35 * .35)], outward: V3 = [.75, .10, -.65], back: V3 = [0, 0, -1];
-    companion.root.position.set(...arrived); companion.root.rotation.y = Math.PI; companion.poseSleeve(1, pickup);
-    const receiptGrip: V3 = [.15, .29, .055];
-    const feedBase = palmPoint(1).sub(new THREE.Vector3(...receiptGrip));
-    const slip = receipt(stage, .22, .29); slip.name = 'active-paper'; const clipFeed = paperFeed(slip, feedBase.y);
-    const stored = receipt(companion.root, .22, .29); stored.name = 'stored-paper'; stored.position.set(.2395, .4035, -.375);
-    const resetCard = () => { payment.position.set(...worldPoint([.1595, .5991, .338974])); payment.rotation.set(0, companion.root.rotation.y, 0); };
+    companion.root.position.set(.05, 0, .20); companion.root.rotation.y = .28; companion.root.scale.setScalar(.72);
+    const waitingA = character(stage), waitingB = character(stage); agents.push(waitingA, waitingB);
+    waitingA.root.position.set(-.85, 0, -.03); waitingA.root.scale.setScalar(.68);
+    waitingB.root.position.set(-1.70, 0, -.16); waitingB.root.scale.setScalar(.66);
+    const machine = apiMachine(), payment = card(stage), cardScale = .5 * .72;
+    payment.name = 'payment-card'; payment.scale.setScalar(cardScale);
+    const rest: V3 = [.30, -.60, .74], tap: V3 = [.65, .12, .75], grip: V3 = [-.23, .02, -.035];
+    companion.poseSleeve(1, tap); placeHeld(payment, companion, 1, grip, 0);
+    const reader = readerAt(payment, cardScale, machine.root, [-.28, .53, .06]);
+    const contactCorrection = reader.plane - (payment.position.z - .055 * cardScale / 2);
+    const slip = receipt(stage, .22, .28); slip.name = 'active-paper'; const feedBase: V3 = [1.25, .42, .265];
+    const clipping = paperFeed(slip, feedBase[1]);
+    const stored = receipt(stage, .22, .28); stored.position.set(1.25, .175, .365); stored.name = 'stored-paper';
     timers.push((time) => {
-      const t = time % cycle;
-      companion.root.position.set(...home); companion.root.rotation.y = .10;
-      if (t >= 2.2 && t < 2.7) companion.root.rotation.y = THREE.MathUtils.lerp(.10, Math.PI / 2, ease((t - 2.2) / .5));
-      else if (t >= 2.7 && t < 6.3) walkBetween(t, 2.7, 6.3, home, arrived, Math.PI / 2, 12);
-      else if (t >= 6.3 && t < 12.1) {
-        companion.root.position.set(...arrived);
-        companion.root.rotation.y = t < 7 ? THREE.MathUtils.lerp(Math.PI / 2, Math.PI, ease((t - 6.3) / .7)) : t < 11.4 ? Math.PI : THREE.MathUtils.lerp(Math.PI, Math.PI * 1.5, ease((t - 11.4) / .7));
-        if (t >= 11.4) walkBetween(t, 11.4, 12.1, arrived, departure, companion.root.rotation.y, 2);
-      } else if (t >= 12.1 && t < 15.7) walkBetween(t, 12.1, 15.7, departure, home, Math.PI * 1.5, 12);
-      else if (t >= 15.7) companion.root.rotation.y = t < 18 ? Math.PI * 1.5 : THREE.MathUtils.lerp(Math.PI * 1.5, TAU + .10, ease((t - 18) / 1.2));
-      companion.poseSleeve(0, restLeft);
-      const lift = ease((t - .5) / 1.1) * (1 - ease((t - 9.2) / .8));
-      const present = ease((t - 6.3) / .7) * (1 - ease((t - 8.4) / .8));
-      const carry = ease((t - 1.6) / .6) * (1 - ease((t - 6.3) / .7));
-      companion.poseSleeve(1, blend(blend(extractDirection(lift), extractDirection(0), carry), pickup, present));
-      purse.rotation.x = -.24 * Math.sin(lift * Math.PI);
-      if (t < 10) placeInPalm(payment, 1, cardGrip, .6 * carry + Math.PI * present); else resetCard();
-      if (t >= 10 && t < 10.8) companion.poseSleeve(1, blend(extractDirection(0), pickup, (t - 10) / .8));
-      else if (t >= 10.8) companion.poseSleeve(1, path(t, [[10.8, pickup], [11.4, [.70, .30, .64]], [12.1, outward], [15.7, outward], [16.7, back], [17.1, back], [17.8, [.28, -.5, -.82]], [18.5, restRight], [22, restRight]]));
-      const feed = ease((t - 8.1) / 1.4);
-      clipFeed(t < 10.8); slip.visible = t >= 8.1 && t < 17.1;
-      if (t < 10.8) { slip.position.copy(feedBase); slip.position.y -= .29 * (1 - feed); slip.rotation.set(0, 0, 0); }
-      else placeInPalm(slip, 1, receiptGrip, Math.PI * (1 - ease((t - 11.4) / .7)));
-      stored.visible = t < 11.4 || t >= 17.1;
-      machine.lamp.material = t > 7.2 && t < 10.2 ? green : lilac;
-      const gaze = t < 2.2 || t >= 9.2 && t < 10.8 ? [payment.position.x, payment.position.y, payment.position.z] as V3 : t < 11.4 ? [.8, 1.1, .20] as V3 : worldPoint([0, 1.0, 2]);
-      companion.lookAtPoint(gaze); mood(t, t >= 7.2 && t < 19 ? 1 : .15);
-      receiptPhase = t < 1.6 ? 'extract-card' : t < 2.7 ? 'turn-to-api' : t < 6.3 ? 'walk-to-api' : t < 8.4 ? 'present-card' : t < 10 ? 'return-card' : t < 10.8 ? 'reach-receipt' : t < 12.1 ? 'collect-receipt' : t < 15.7 ? 'walk-away' : t < 17.1 ? 'pocket-receipt' : 'stored';
+      const t = time % cycle, reach = ease((t - .7) / 1.3) * (1 - ease((t - 3.4) / 1.1));
+      companion.poseSleeve(0, idleLeft); companion.poseSleeve(1, blend(rest, tap, reach));
+      placeHeld(payment, companion, 1, grip, 0); payment.position.z = Math.max(payment.position.z + contactCorrection * reach, reader.plane + .055 * cardScale / 2);
+      contactGap = payment.position.z - .055 * cardScale / 2 - reader.plane;
+      contact = t >= 2 && t <= 3.4; machine.lamp.material = contact ? green : lilac;
+      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .12, reader.root.position.z]); face(companion, t, 'happy');
+      [waitingA, waitingB].forEach((agent, index) => {
+        const glance = .5 - .5 * Math.cos((t / cycle + index * .28) * TAU);
+        agent.root.rotation.y = .66 - glance * .48;
+        agent.poseSleeve(0, idleLeft); agent.poseSleeve(1, idleRight);
+        agent.lookAtPoint(glance > .45 ? [5.5, 2.8, 11] : [.8, .85, .1]); face(agent, t + index * 1.8, index === 0 ? 'curious' : 'patient');
+      });
+      const feed = ease((t - 2.25) / 1.3), drop = ease((t - 5.9) / .9);
+      printedHeight = .28 * feed; clipping(t < 5.9); slip.visible = t >= 2.25 && t < 6.8;
+      slip.position.set(feedBase[0], feedBase[1] - .28 * (1 - feed), feedBase[2]);
+      if (t >= 5.9) slip.position.lerp(new THREE.Vector3(1.25, .175, .365), drop);
+      stored.visible = t < 5.9 || t >= 6.8;
+      paperOwner = t < 5.9 ? 'printer' : 'tray'; receiptPhase = t < 2 ? 'approach-reader' : t < 3.4 ? 'card-contact-and-print' : t < 5.9 ? 'receipt-ready' : 'receipt-in-tray';
     });
   } else if (kind === 'wallet') {
-    const purse = addWallet(), payment = card(stage); payment.name = 'payment-card'; payment.scale.setScalar(.5);
+    companion.root.position.set(-.60, 0, 0);
+    const x = .68, homeY = -.10, homeZ = Math.sqrt(1 - x * x - homeY * homeY);
+    const grip: V3 = [-.245, .14, -.035];
+    companion.poseSleeve(1, [x, homeY, homeZ]);
+    const payment = card(stage); payment.name = 'payment-card'; payment.scale.setScalar(.75); placeHeld(payment, companion, 1, grip, 0);
+    const lip = payment.position.y + .045;
+    const purse = openContainer(stage, [payment.position.x, lip - .17, payment.position.z], .55, .34, .12); purse.name = 'wallet';
+    curve(stage, [[-.37, .77, .30], [-.14, .65, .22], [payment.position.x - .21, lip - .02, payment.position.z - .04]], .022, lilac);
     timers.push((time) => {
-      const t = time % cycle, lift = ease((t - .6) / 1.5) * (1 - ease((t - 5.5) / 1.6));
-      companion.root.position.set(0, 0, .2); companion.root.rotation.y = -.12 + lift * .25;
-      companion.poseSleeve(0, restLeft); companion.poseSleeve(1, extractDirection(lift));
-      purse.rotation.x = -.24 * Math.sin(lift * Math.PI); placeInPalm(payment, 1, cardGrip);
-      companion.lookAtPoint([payment.position.x, payment.position.y, payment.position.z]); mood(t, lift);
-      receiptPhase = t < 2.1 ? 'extract-card' : t < 5.5 ? 'inspect-card' : t < 7.1 ? 'return-card' : 'stored';
-    }); stillTime = 3.5;
+      const t = time % cycle, lift = ease((t - .7) / 1.5) * (1 - ease((t - 5) / 1.8));
+      const y = THREE.MathUtils.lerp(homeY, .70, lift), z = Math.sqrt(1 - x * x - y * y);
+      companion.body.position.z = .32 * (homeZ - z);
+      companion.poseSleeve(0, idleLeft); companion.poseSleeve(1, [x, y, z]);
+      placeHeld(payment, companion, 1, grip, 0);
+      const bottom = payment.position.y - .39 * .75 / 2;
+      concealedFraction = THREE.MathUtils.clamp((lip - bottom) / (.39 * .75), 0, 1);
+      companion.lookAtPoint([payment.position.x, payment.position.y + .10, payment.position.z]);
+      companion.head.rotation.set(.06, -.08, -.05); face(companion, t, 'curious');
+      receiptPhase = t < 2.2 ? 'extract-from-wallet' : t < 5 ? 'card-clear-of-wallet' : t < 6.8 ? 'return-inside-wallet' : 'card-inside-wallet';
+    }); stillTime = 3.1;
   } else if (kind === 'policy') {
-    const station = group(stage, [.83, 0, .02]); station.name = 'policy'; station.scale.setScalar(.74);
-    round(station, [1.1, .23, .92], [0, .13, 0], .11, lilac); round(station, [.85, .74, .65], [0, .59, 0], .17, ceramic);
-    round(station, [.63, .08, .045], [0, .65, .342], .035, dark);
-    const approved = check(station, [0, .38, .337], .8, violet), lock = group(station, [0, 1.55, 0]);
-    round(lock, [.84, .7, .42], [0, 0, 0], .17, lilac); ball(lock, [.065, .065, .012], [0, .055, .219], ceramic); round(lock, [.055, .13, .025], [0, -.025, .216], .025, ceramic);
-    const shackle = group(lock, [-.25, .29, 0]); curve(shackle, [[0, 0, 0], [0, .33, 0], [.25, .5, 0], [.5, .33, 0], [.5, 0, 0]], .065, ceramic);
-    const payment = card(stage); payment.scale.setScalar(.5);
+    companion.root.position.set(-.45, 0, .20); companion.root.rotation.y = .22; companion.root.scale.setScalar(.9);
+    const station = group(stage, [.85, 0, -.04]); station.name = 'policy';
+    round(station, [.64, .12, .52], [0, .09, 0], .05, lilac); round(station, [.54, .52, .42], [0, .40, 0], .09, ceramic);
+    const lock = group(station, [0, .98, 0]); round(lock, [.50, .42, .26], [0, 0, 0], .085, lilac);
+    ball(lock, [.035, .035, .008], [0, .035, .138], ceramic); round(lock, [.025, .065, .012], [0, -.005, .14], .01, ceramic);
+    const shackle = group(lock, [-.145, .18, 0]); curve(shackle, [[0, -.16, 0], [0, .25, 0], [.145, .34, 0], [.29, .25, 0], [.29, 0, 0]], .04, ceramic);
+    const approval = check(station, [0, .36, .217], .60, violet);
+    const payment = card(stage), cardScale = .5 * .9; payment.name = 'payment-card'; payment.scale.setScalar(cardScale);
+    const rest: V3 = [.30, -.60, .74], tap: V3 = [.65, .12, .75], grip: V3 = [-.23, .02, -.035];
+    companion.poseSleeve(1, tap); placeHeld(payment, companion, 1, grip, 0);
+    const reader = readerAt(payment, cardScale, station, [-.24, .47, .04]);
+    const correction = reader.plane - (payment.position.z - .055 * cardScale / 2);
     timers.push((time) => {
-      const t = time % cycle, present = ease((t - 2.5) / 1.1) * (1 - ease((t - 6.4) / 1)), open = ease((t - 4) / .8) * (1 - ease((t - 6.2) / .8));
-      companion.root.position.set(-.66, 0, .28); companion.root.rotation.y = .16;
-      if (t >= .8 && t < 2.4) walkBetween(t, .8, 2.4, [-.66, 0, .28], [-.27, 0, .28], Math.PI / 2, 2);
-      else if (t >= 2.4 && t < 7.8) { companion.root.position.set(-.27, 0, .28); companion.root.rotation.y = t < 2.9 ? THREE.MathUtils.lerp(Math.PI / 2, .35, ease((t - 2.4) / .5)) : t < 7.3 ? .35 : THREE.MathUtils.lerp(.35, -Math.PI / 2, ease((t - 7.3) / .5)); }
-      else if (t >= 7.8 && t < 9.4) walkBetween(t, 7.8, 9.4, [-.27, 0, .28], [-.66, 0, .28], -Math.PI / 2, 2);
-      else if (t >= 9.4) companion.root.rotation.y = THREE.MathUtils.lerp(-Math.PI / 2, .16, ease((t - 9.4) / .5));
-      companion.poseSleeve(0, restLeft); companion.poseSleeve(1, blend([.18, -.85, .49], [.14, .16, .98], present));
-      placeInPalm(payment, 1, [-.17, .02, -.04]);
-      shackle.rotation.y = -open * .8; shackle.position.y = .29 + open * .14; approved.visible = open > .2;
-      companion.lookAtPoint([.83, 1.2, .1]); mood(t, open); receiptPhase = t < 2.4 ? 'approach-policy' : t < 4 ? 'present-card' : t < 6.2 ? 'authorized' : t < 7.8 ? 'withdraw-card' : 'step-away';
-    });
+      const t = time % cycle, reach = ease((t - .5) / 1.2) * (1 - ease((t - 4) / 1.1)), open = ease((t - 2.05) / .7) * (1 - ease((t - 5.4) / .7));
+      companion.poseSleeve(0, idleLeft); companion.poseSleeve(1, blend(rest, tap, reach)); placeHeld(payment, companion, 1, grip, 0); payment.position.z = Math.max(payment.position.z + correction * reach, reader.plane + .055 * cardScale / 2);
+      contactGap = payment.position.z - .055 * cardScale / 2 - reader.plane; contact = t >= 1.7 && t <= 4;
+      shackle.position.y = .18 + open * .105; shackle.rotation.y = open * .80; approval.visible = open > .2;
+      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .15, reader.root.position.z]); face(companion, t, 'happy');
+      receiptPhase = t < 1.7 ? 'approach-reader' : t < 2.05 ? 'card-contact' : t < 4 ? 'lock-open-after-contact' : 'withdraw-card';
+    }); stillTime = 2.7;
   } else {
-    companion.root.position.set(.42, 0, .55); companion.root.rotation.y = -.25;
-    const receiptRest: V3 = [0, .08, .997];
-    const ready: V3 = [-.65, .3, .70], reach: V3 = [-.94, .32, .10], back: V3 = [0, 0, -1];
+    companion.root.position.set(.25, 0, .20); companion.root.scale.setScalar(.9);
+    const reach: V3 = [-.75, .25, Math.sqrt(1 - .75 * .75 - .25 * .25)], store: V3 = [-.75, -.12, Math.sqrt(1 - .75 * .75 - .12 * .12)];
+    const rest: V3 = [-.15, -.3, .94], grip: V3 = [.15, .29, .035];
     companion.poseSleeve(0, reach);
-    const grip: V3 = [-.10, .29, .055];
-    const feedBase = palmPoint(0).sub(new THREE.Vector3(...grip).applyAxisAngle(new THREE.Vector3(0, 1, 0), -.25));
-    const printer = group(stage, [feedBase.x - .12, 0, feedBase.z - .12]); printer.name = 'printer';
-    round(printer, [.88, .40, .68], [0, .25, 0], .12, ceramic); round(printer, [.82, .09, .62], [0, .09, 0], .04, violet);
-    round(printer, [.76, .07, .52], [0, .47, -.02], .035, pearl); round(printer, [.52, .035, .07], [.08, .516, .12], .015, dark);
-    for (const x of [-.30, .30]) for (const z of [-.22, .22]) ball(printer, [.055, .055, .055], [x, .055, z], dark);
-    ball(printer, [.03, .015, .03], [.29, .515, -.15], green);
-    const slip = receipt(stage, .22, .29); slip.name = 'active-paper'; const clipFeed = paperFeed(slip, feedBase.y);
-    const stored = receipt(companion.root, .22, .29); stored.name = 'stored-paper'; stored.position.set(-.2895, .4035, -.375); stored.visible = true;
+    const slip = receipt(stage, .22, .29); slip.name = 'active-paper'; slip.scale.setScalar(.9); placeHeld(slip, companion, 0, grip, 0);
+    const feedBase = slip.position.clone(), clipping = paperFeed(slip, feedBase.y);
+    const printer = group(stage, [feedBase.x - .25, 0, feedBase.z - .12]); printer.name = 'printer';
+    round(printer, [.88, .30, .62], [0, .22, 0], .10, ceramic); round(printer, [.82, .07, .56], [0, .08, 0], .03, violet);
+    round(printer, [.76, .05, .49], [0, .395, -.015], .025, pearl); round(printer, [.34, .025, .065], [.25, feedBase.y, .12], .01, dark);
+    ball(printer, [.025, .012, .025], [-.26, .425, -.15], green);
+    companion.root.rotation.y = Math.PI; companion.poseSleeve(0, store); placeHeld(slip, companion, 0, grip, Math.PI);
+    const storedAt = slip.position.clone();
+    const bag = openContainer(stage, [storedAt.x, .25, storedAt.z], .44, .50, .12); bag.name = 'bag';
+    curve(bag, [[-.12, .24, .075], [-.12, .34, .12], [.12, .34, .12], [.12, .24, .075]], .018, violet);
+    const kept = receipt(stage, .22, .29); kept.name = 'stored-paper'; kept.scale.setScalar(.9); kept.position.copy(storedAt); kept.rotation.y = Math.PI;
     timers.push((time) => {
-      const t = time % cycle, turn = ease((t - 4.3) / 1.4) * (1 - ease((t - 8.2) / 1.4));
-      companion.root.position.set(.42 + turn * .16, 0, .55); companion.root.rotation.y = -.25 - turn * 2.05;
-      companion.poseSleeve(1, restRight);
-      companion.poseSleeve(0, path(t, [[0, receiptRest], [1.2, receiptRest], [2, ready], [2.8, reach], [4.3, reach], [5.1, [-.75, .1, -.65]], [5.8, back], [6.6, back], [7.4, [-.28, -.5, -.82]], [8.1, receiptRest], [10, receiptRest]]));
-      const feed = ease(t / 1.7);
-      clipFeed(t < 2.8); slip.visible = t < 6.6;
-      if (t < 2.8) { slip.position.copy(feedBase); slip.position.y -= .29 * (1 - feed); slip.rotation.set(0, -.25, 0); }
-      else placeInPalm(slip, 0, grip);
-      stored.visible = t < 4.3 || t >= 6.6;
-      companion.lookAtPoint(t < 4.3 ? [feedBase.x, feedBase.y + .29, feedBase.z] : worldPoint([0, 1.0, 2]));
-      mood(t, ease((t - 2.8) / 1.5)); receiptPhase = t < 2.8 ? 'printing' : t < 5.8 ? 'taking-to-pocket' : 'stored';
-    }); stillTime = 3.5;
+      const t = time % cycle, turn = ease((t - 3.5) / 1.8) * (1 - ease((t - 8) / 1.4));
+      companion.root.rotation.y = Math.PI * turn; companion.poseSleeve(1, idleRight);
+      companion.poseSleeve(0, path(t, [[0, rest], [.9, rest], [1.8, [-.65, .3, .70]], [2.6, reach], [5.3, reach], [6.3, store], [6.8, store], [7.6, [-.65, .40, .65]], [9.4, [-.65, .40, .65]], [10, rest]]));
+      const feed = ease(t / 1.8); printedHeight = .29 * .9 * feed; clipping(t < 2.6); slip.visible = t < 6.8;
+      if (t < 2.6) { slip.position.copy(feedBase); slip.position.y -= .29 * .9 * (1 - feed); slip.rotation.y = 0; }
+      else placeHeld(slip, companion, 0, grip, companion.root.rotation.y);
+      kept.visible = t < 3.5 || t >= 6.8;
+      companion.lookAtPoint(t < 3.5 ? [feedBase.x, feedBase.y + .25, feedBase.z] : [storedAt.x, .65, storedAt.z]); face(companion, t, 'happy');
+      paperOwner = t < 2.6 ? 'printer' : t < 6.8 ? 'agent' : 'bag'; receiptPhase = t < 2.6 ? 'print-outward' : t < 5.3 ? 'grasp-and-turn' : t < 6.8 ? 'place-in-bag' : 'stored-in-bag';
+    }); stillTime = 3;
   }
   function update(time: number) {
-    walking = false; footLift.fill(0); companion.feet.forEach(foot => foot.position.set(0, 0, 0));
-    timers.forEach(animate => animate(time)); companion.head.position.y = companion.headRestY + Math.sin(time * 1.5) * .018;
-    const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60); companion.eyes.forEach(eye => { eye.scale.y = (1 - blink * .92) * (1 - emotion * .16); });
+    contact = false; contactGap = null; concealedFraction = null; printedHeight = 0; paperOwner = null;
+    timers.forEach(animate => animate(time));
   }
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let visible = true, alive = true, unavailable = false, frame = 0, elapsed = 0, last = performance.now();
   const resize = () => {
     const width = host.clientWidth, height = host.clientHeight; if (!width || !height) return;
-    const aspect = width / height, halfHeight = kind === 'hero' ? 2.12 : 1.95;
+    const aspect = width / height, halfHeight = kind === 'hero' ? 1.48 : 1.55;
     camera.left = -halfHeight * aspect; camera.right = halfHeight * aspect; camera.top = halfHeight; camera.bottom = -halfHeight; camera.updateProjectionMatrix();
     renderer.setSize(width, height, false); update(stillPose ?? (motion.matches ? stillTime : elapsed)); renderer.render(scene, camera);
   };
   const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
-  const visibility = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? false; last = performance.now(); }, { threshold: .01 }); visibility.observe(host);
+  const visibility = new IntersectionObserver(entries => { visible = entries[entries.length - 1]?.isIntersecting ?? false; last = performance.now(); }, { threshold: .01 }); visibility.observe(host);
   const draw = (now: number) => {
     if (!alive) return; frame = requestAnimationFrame(draw);
     if (!visible || unavailable || document.hidden || motion.matches || stillPose !== undefined) { last = now; return; }
@@ -401,7 +386,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     alive = false; cancelAnimationFrame(frame); resizeObserver.disconnect(); visibility.disconnect(); motion.removeEventListener('change', changeMotion);
     scene.traverse(object => { if (object instanceof THREE.Mesh) object.geometry.dispose(); }); materials.forEach(value => { value.map?.dispose(); value.dispose(); });
     renderer.domElement.removeEventListener('webglcontextlost', contextLost); renderer.domElement.removeEventListener('webglcontextrestored', contextRestored);
-    spriteMaterials.forEach(value => value.dispose()); bubbleTexture.dispose(); shadowMaterial.dispose(); shadowTexture.dispose(); environmentMap.dispose(); renderer.dispose(); renderer.domElement.remove();
+    shadowMaterial.dispose(); shadowTexture.dispose(); environmentMap.dispose(); renderer.dispose(); renderer.domElement.remove();
   };
-  return Object.assign(dispose, { renderPose: (time: number) => { update(time); renderer.render(scene, camera); return { receiptPhase, bodyYaw: companion.root.rotation.y, headYaw: companion.head.rotation.y, sleeveLengths: companion.armJoints.map(([a, b]) => a.distanceTo(b)), sleeveCount: 2, limbDesign: 'single-sleeve', cycle, walking, rootPosition: companion.root.position.toArray(), footLift: [...footLift], feetWorld: companion.feet.map((foot, index) => foot.localToWorld(new THREE.Vector3((index === 0 ? -1 : 1) * .19, 0, .052)).toArray()) }; } });
+  return Object.assign(dispose, { renderPose: (time: number) => { update(time); renderer.render(scene, camera); return { receiptPhase, cycle, agentCount: agents.length, contact, cardReaderGap: contactGap, concealedFraction, printedHeight, paperOwner, sleeveLengths: agents.flatMap(agent => agent.armJoints.map(([a, b]) => a.distanceTo(b))), limbDesign: 'single-sleeve', palette: 'white-black-light-purple', clouds: 0 }; } });
 }
