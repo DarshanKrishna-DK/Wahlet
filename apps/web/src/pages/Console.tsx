@@ -18,7 +18,9 @@ export default function Console() {
  const token = useRef(sessionStorage.getItem('wahlet-owner') ?? '');
  async function api(path: string, body?: unknown) {
   if (!token.current) throw new Error('Open an authorized owner console with npm run console from your Wahlet directory. This page cannot grant itself wallet authority.');
-  const response = await fetch(path, {method: body ? 'POST' : 'GET', headers: {Authorization: `Bearer ${token.current}`, ...(body ? {'Content-Type': 'application/json'} : {})}, ...(body ? {body: JSON.stringify(body)} : {})});
+  let response: Response;
+  try { response = await fetch(path, {method: body ? 'POST' : 'GET', headers: {Authorization: `Bearer ${token.current}`, ...(body ? {'Content-Type': 'application/json'} : {})}, ...(body ? {body: JSON.stringify(body)} : {})}); }
+  catch { throw new Error('Connection to the wallet service was lost. The payment may still complete. Restart the service if needed, reopen the authorized console, and check Activity before sending again. Resume the original request instead of creating another payment.'); }
   const data = await response.json(); if (!response.ok) { if(response.status === 401) { token.current = ''; sessionStorage.removeItem('wahlet-owner'); } throw new Error(data.error || 'The local service could not complete this request'); } return data;
  }
  async function refresh(reconcile = false) { setBusy(true); try { setState(reconcile ? (await api('/api/command', {command: 'refresh'})).result : await api('/api/state')); setError(''); } catch(e) {setError(e instanceof Error ? e.message : 'Local service unavailable');} finally {setBusy(false);} }
