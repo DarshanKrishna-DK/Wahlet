@@ -21,7 +21,12 @@ export function useSectionNavigation(closeMenu:()=>void){
       history.pushState(null,'',url.hash);scrollToSection(url.hash.slice(1));
     }
     const saved=sessionStorage.getItem('wahlet-section');
-    if(location.pathname==='/'&&saved){sessionStorage.removeItem('wahlet-section');frame=requestAnimationFrame(()=>scrollToSection(saved));}
+    const requested=saved??location.hash.slice(1);
+    if(location.pathname==='/'&&['product','how-it-works','developers'].includes(requested)){
+      sessionStorage.removeItem('wahlet-section');
+      if(saved)history.replaceState(null,'','#'+saved);
+      frame=requestAnimationFrame(()=>scrollToSection(requested));
+    }
     const cancel=()=>cancelAnimationFrame(frame);
     document.addEventListener('click',clicked);window.addEventListener('wheel',cancel,{passive:true});window.addEventListener('touchstart',cancel,{passive:true});
     return()=>{cancel();document.removeEventListener('click',clicked);window.removeEventListener('wheel',cancel);window.removeEventListener('touchstart',cancel);};

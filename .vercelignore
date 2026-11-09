@@ -1,0 +1,14 @@
+# Only public website sources and its build inputs may be uploaded.
+**
+!package.json
+!package-lock.json
+!vite.config.ts
+!vercel.json
+!apps
+!apps/**
+apps/web/dist
+apps/web/dist/**
+apps/web/src/components/PaymentGate.tsx
+apps/web/src/generated
+apps/web/src/generated/**
+**/.env*
