@@ -4,7 +4,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { SceneKind } from './AnatomyScene';
 
 type V3 = [number, number, number];
-type Material = THREE.MeshPhysicalMaterial;
+type Material = THREE.MeshStandardMaterial | THREE.MeshPhysicalMaterial;
 const TAU = Math.PI * 2;
 const ease = (v: number) => { const t = THREE.MathUtils.clamp(v, 0, 1); return t * t * (3 - 2 * t); };
 const blend = (a: V3, b: V3, t: number): V3 => a.map((v, i) => THREE.MathUtils.lerp(v, b[i], ease(t))) as V3;
@@ -37,8 +37,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   };
   const ceramic = material('#fffaf3', .25), pearl = material('#d8d5e1', .32), lilac = material('#c6b5ef', .34), violet = material('#806697', .43);
   const dark = material('#181b25', .4, .02), lens = material('#111723', .27, 0, { clearcoat: .8 });
-  const glow = material('#f8eaff', .25, 0, { emissive: '#dcc8ff', emissiveIntensity: .5 });
-  const pink = material('#e7bfd2', .5), gold = material('#dfca9a', .34, .6), ink = material('#797086', .65);
+  const gold = material('#dfca9a', .34, .6), ink = material('#797086', .65);
   const paper = material('#fffdf4', .78, 0, { clearcoat: 0, side: THREE.DoubleSide });
   const green = material('#c1d9c0', .35, 0, { emissive: '#93af8f', emissiveIntensity: .15 });
   scene.add(new THREE.HemisphereLight(0xf7edff, 0x55465e, .8));
@@ -104,71 +103,69 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     for (const side of [-1, 1]) for (let i = 0; i < 5; i++) rod(root, [side * .39, -.23 + i * .054, .165], [side * .39, -.21 + i * .054, .165], .004, ceramic);
     round(root, [.24, .17, .06], [.34, -.065, .19], .05, violet); ball(root, [.039, .039, .012], [.36, -.065, .225], gold); return root;
   }
-  function hand(parent: THREE.Object3D) {
-    const root = group(parent); round(root, [.23, .22, .15], [0, 0, 0], .075, ceramic);
-    for (let i = 0; i < 3; i++) round(root, [.063, .105, .09], [-.065 + i * .065, -.079, .016], .03, ceramic);
-    const thumb = round(root, [.075, .13, .095], [.108, -.015, .025], .035, ceramic); thumb.rotation.z = -.4; return root;
-  }
   function character(parent: THREE.Object3D) {
-    const root = group(parent);
+    const root = group(parent), unit = 1.75;
+    const cream = new THREE.MeshPhysicalMaterial({ color: 0xf4d9df, metalness: .12, roughness: .32, clearcoat: .8 });
+    const rose = new THREE.MeshPhysicalMaterial({ color: 0xb56e94, metalness: .35, roughness: .3, clearcoat: 1 });
+    const screen = new THREE.MeshStandardMaterial({ color: 0x191821, roughness: .2 });
+    const lit = new THREE.MeshStandardMaterial({ color: 0xffc6df, emissive: 0xa43d78, emissiveIntensity: .6 });
+    materials.push(cream, rose, screen, lit);
+    const robotBox = (parent: THREE.Object3D, size: V3, position: V3, mat: Material, radius: number) =>
+      mesh(parent, new RoundedBoxGeometry(...size.map(v => v * unit) as V3, 2, Math.min(radius, ...size.map(v => v / 3)) * unit), mat, position.map(v => v * unit) as V3);
     const feet: THREE.Group[] = [];
     for (const side of [-1, 1]) {
       const foot = group(root); feet.push(foot);
-      mesh(foot, new THREE.CapsuleGeometry(.13, .22, 8, 24), ceramic, [side * .25, .39, .015]);
-      round(foot, [.4, .055, .57], [side * .27, .075, .12], .08, lilac);
-      round(foot, [.4, .245, .57], [side * .27, .19, .12], .12, ceramic);
+      mesh(foot, new THREE.CylinderGeometry(.07 * unit, .075 * unit, .31 * unit, 10), rose, [side * .2 * unit, .315 * unit, 0]);
+      robotBox(foot, [.25, .12, .38], [side * .2, .07, .055], cream, .05);
     }
-    const profile = new THREE.SplineCurve([new THREE.Vector2(0,.56),new THREE.Vector2(.29,.57),new THREE.Vector2(.43,.72),new THREE.Vector2(.48,1.03),new THREE.Vector2(.47,1.35),new THREE.Vector2(.43,1.52),new THREE.Vector2(.22,1.64),new THREE.Vector2(0,1.65)]);
-    const body = mesh(root, new THREE.LatheGeometry(profile.getPoints(48), 64), ceramic); body.scale.z = .84;
-    const neck = mesh(root, new THREE.TorusGeometry(.2, .04, 16, 48), lilac, [0, 1.7, 0]); neck.rotation.x = Math.PI / 2;
-    const head = group(root, [0, 2.28, 0]); round(head, [1.42, 1.13, 1.03], [0, 0, 0], .43, ceramic);
-    const face = group(head, [0, -.015, .493]);
-    round(face, [1.14, .65, .075], [0, 0, 0], .25, ceramic); round(face, [1.065, .59, .095], [0, .01, .027], .24, lens);
-    const pupils = group(face);
-    const eyes: THREE.Mesh[] = [];
+    robotBox(root, [.67, .42, .56], [0, .63, 0], rose, .12);
+    robotBox(root, [.22, .09, .035], [0, .66, .3], cream, .02);
+    const headRestY = 1.09 * unit, head = group(root, [0, headRestY, 0]);
+    robotBox(head, [1.1, .75, .76], [0, 0, 0], cream, .2);
+    robotBox(head, [.88, .48, .07], [0, 0, .395], screen, .14);
+    const pupils = group(head), eyes: THREE.Mesh[] = [];
+    for (const side of [-1, 1]) eyes.push(robotBox(pupils, [.095, .16, .025], [side * .2, .055, .44], lit, .035));
+    const mouth = group(head, [0, -.12 * unit, .44 * unit]);
+    robotBox(mouth, [.15, .025, .02], [0, -.015, 0], lit, .008);
+    for (const side of [-1, 1]) robotBox(mouth, [.075, .025, .02], [side * .095, .005, 0], lit, .008).rotation.z = side * .55;
+    mesh(head, new THREE.CylinderGeometry(.025 * unit, .025 * unit, .17 * unit, 8), rose, [0, .45 * unit, 0]);
+    mesh(head, new THREE.SphereGeometry(.065 * unit, 12, 8), lit, [0, .56 * unit, 0]);
+    const hands: THREE.Group[] = [], armSegments: THREE.Mesh[][] = [];
     for (const side of [-1, 1]) {
-      eyes.push(ball(pupils, [.062, .105, .025], [side * .225, .045, .092], glow));
-      ball(pupils, [.016, .025, .008], [side * .225 - .013, .083, .117], ceramic);
-      ball(face, [.067, .024, .009], [side * .345, -.083, .094], pink);
-    }
-    curve(face, [[-.105, -.105, .105], [0, -.15, .115], [.105, -.105, .105]], .018, glow);
-    rod(head, [.1, .53, -.08], [.17, .77, -.08], .035, pearl); ball(head, [.09, .09, .09], [.17, .78, -.08], lilac);
-    ball(root, [.14, .14, .025], [0, 1.2, .396], lilac); check(root, [0, 1.2, .429], .6, ceramic);
-    const hands = [hand(root), hand(root)], armSegments: THREE.Mesh[][] = [], elbows: THREE.Mesh[] = [];
-    for (const side of [-1, 1]) {
+      const hand = group(root); hands.push(hand);
+      robotBox(hand, [.19, .15, .21], [0, 0, 0], rose, .055);
       armSegments.push([
-        mesh(root, new THREE.CapsuleGeometry(.125, .33, 8, 24), ceramic),
-        mesh(root, new THREE.CapsuleGeometry(.105, .35, 8, 24), ceramic),
+        robotBox(root, [.15, .29, .17], [0, 0, 0], cream, .055),
+        robotBox(root, [.15, .29, .17], [0, 0, 0], cream, .055),
       ]);
-      elbows.push(ball(root, [.095, .095, .095], [0, 0, 0], ceramic));
+      if (side === -1) robotBox(hand, [.11, .085, .025], [0, .055, .11], lit, .02);
     }
-    function poseArm(index: number, target: V3, bendUp = false) {
-      const side = index === 0 ? -1 : 1, shoulder: V3 = [side * .48, 1.48, 0];
+    function poseArm(index: number, target: V3, _bendUp = false) {
+      const side = index === 0 ? -1 : 1, shoulder: V3 = [side * .41 * unit, .73 * unit, 0];
       const origin = new THREE.Vector3(...shoulder), direction = new THREE.Vector3(...target).sub(origin);
       maxReachError = Math.max(maxReachError, direction.length() - 1.039);
       const distance = THREE.MathUtils.clamp(direction.length(), .04, 1.039);
       direction.normalize();
       const endpoint = origin.clone().addScaledVector(direction, distance);
-      const bend = new THREE.Vector3(side * .65, bendUp ? .7 : -.85, -.12);
+      const bend = new THREE.Vector3(side * .75, -.85, -.12);
       bend.addScaledVector(direction, -bend.dot(direction)).normalize();
       const joint = origin.clone().addScaledVector(direction, distance / 2).addScaledVector(bend, Math.sqrt(.52 ** 2 - (distance / 2) ** 2));
-      const elbow: V3 = [joint.x, joint.y, joint.z]; target = [endpoint.x, endpoint.y, endpoint.z];
-      elbows[index].position.set(...elbow);
-      [[shoulder, elbow], [elbow, target]].forEach(([start, end], j) => {
-        const a = new THREE.Vector3(...start), b = new THREE.Vector3(...end), delta = b.clone().sub(a), segment = armSegments[index][j];
-        segment.position.copy(a.add(b).multiplyScalar(.5)); segment.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+      [[origin, joint], [joint, endpoint]].forEach(([a, b], j) => {
+        const segment = armSegments[index][j];
+        segment.position.copy(a).add(b).multiplyScalar(.5);
+        segment.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
       });
-      hands[index].position.set(...target); hands[index].rotation.z = side * -.2;
+      hands[index].position.copy(endpoint); hands[index].rotation.set(0, 0, 0);
     }
-    poseArm(0, [-.65, 1.02, .25]); poseArm(1, [.65, 1.02, .25]);
+    poseArm(0, [-.75, .72, .15]); poseArm(1, [.75, .72, .15]);
     function lookAtPoint(world: V3) {
       root.updateWorldMatrix(true, false);
       const target = root.worldToLocal(new THREE.Vector3(...world)).sub(head.position);
-      const yaw = THREE.MathUtils.clamp(Math.atan2(target.x, Math.max(.5, target.z)) * .5, -.48, .48);
-      const pitch = THREE.MathUtils.clamp(Math.atan2(-target.y, Math.hypot(target.x, target.z)) * .32, -.17, .3);
-      head.rotation.set(pitch, yaw, -yaw * .06); pupils.position.set(yaw * .075, -pitch * .045, 0);
+      const yaw = THREE.MathUtils.clamp(Math.atan2(target.x, Math.max(.5, target.z)) * .34, -.28, .28);
+      const pitch = THREE.MathUtils.clamp(Math.atan2(-target.y, Math.hypot(target.x, target.z)) * .16, -.1, .14);
+      head.rotation.set(pitch, yaw, -yaw * .04); pupils.position.set(yaw * .075, -pitch * .045, 0);
     }
-    return { root, head, eyes, hands, feet, poseArm, lookAtPoint };
+    return { root, head, headRestY, eyes, hands, feet, poseArm, lookAtPoint };
   }
   function receipt(parent: THREE.Object3D, width = .55, height = .85) {
     const root = group(parent), shape = new THREE.Shape(); shape.moveTo(-width / 2, 0); shape.lineTo(width / 2, 0);
@@ -214,51 +211,54 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   let stillTime = 4.6;
   if (kind === 'hero') {
     companion.root.position.set(-1.12, 0, .05); companion.root.rotation.y = .12;
-    const purse = wallet(companion.root); purse.position.set(-.18, 1.2, .7);
+    const purse = wallet(companion.root); purse.position.set(-.18, .75, .82);
     const payment = card(stage), machine = terminal(stage); machine.root.position.set(1.29, 0, -.05); machine.root.rotation.y = -.1;
     const slip = receipt(stage); slip.position.set(1.24, .68, .43);
-    const home: V3 = [-.13, 1.53, .74], cleared: V3 = [-.13, 1.74, .74], lifted: V3 = [.35, 1.74, .65], tap: V3 = [.98, 1.2, .5];
+    const home: V3 = [-.03, 1.0, .86], cleared: V3 = [-.03, 1.28, .86], lifted: V3 = [.35, 1.28, .86], tap: V3 = [.98, 1.1, .56];
+    const cardGrip: V3 = [.465, 0, .06], receiptGrip: V3 = [-.21, .4, .19];
     timers.push((time) => {
       const t = time % 10, approach = ease((t - 1.5) / 1.7) * (1 - ease((t - 8.6) / 1.4));
       companion.root.position.set(-1.12 + approach, 0, .05 + approach * .13);
-      const walking = t >= 1.5 && t < 3.2 ? (t - 1.5) / 1.7 : t >= 8.6 ? (t - 8.6) / 1.4 : -1;
-      walk(walking);
-      companion.poseArm(0, [-.65, .74, .69]); companion.hands[0].rotation.z = Math.PI;
-      stage.updateMatrixWorld(true);
+      companion.head.position.x = -approach * .34;
+      walk(t >= 1.5 && t < 3.2 ? (t - 1.5) / 1.7 : t >= 8.6 ? (t - 8.6) / 1.4 : -1);
+      companion.poseArm(0, [-.80, .72, .81]);
       const homeWorld = worldPoint(home), clearWorld = worldPoint(cleared), liftWorld = worldPoint(lifted); let target = homeWorld;
       if (t < .9) target = blend(homeWorld, clearWorld, t / .9);
       else if (t < 1.5) target = blend(clearWorld, liftWorld, (t - .9) / .6);
-      else if (t < 3.4) target = blend(liftWorld, tap, (t - 1.5) / 1.9);
+      else if (t < 2.2) target = liftWorld;
+      else if (t < 3.4) target = blend(liftWorld, tap, (t - 2.2) / 1.2);
       else if (t < 4.7) target = tap;
       else if (t < 5.4) target = blend(tap, liftWorld, (t - 4.7) / .7);
-      else if (t < 5.7) target = blend(liftWorld, clearWorld, (t - 5.4) / .3);
-      else if (t < 6.3) target = blend(clearWorld, homeWorld, (t - 5.7) / .6);
+      else if (t < 5.8) target = liftWorld;
+      else if (t < 6.1) target = blend(liftWorld, clearWorld, (t - 5.8) / .3);
+      else if (t < 6.6) target = blend(clearWorld, homeWorld, (t - 6.1) / .5);
       payment.position.set(...target); payment.rotation.set(0, .12, 0);
-      holdAt(1, payment, [.24, .16, .115]);
-      const receive = ease((t - 7.3) / 1.1);
+      holdAt(1, payment, cardGrip); companion.hands[1].rotation.y = payment.rotation.y - companion.root.rotation.y;
+      const receive = ease((t - 7.5) / 1.1);
       slip.scale.y = (.03 + .97 * ease((t - 4.1) / 1.3)) * (1 - ease((t - 9.1) / .9));
-      slip.position.set(...blend([1.24, .68, .45], worldPoint([.45, 1.15, .8]), receive)); slip.rotation.z = receive * -.15;
-      if (t > 7.1) {
-        holdAt(1, slip, [-.21, .4, .07]);
-        if (t > 9.1) { const p = companion.hands[1].position; companion.poseArm(1, blend([p.x, p.y, p.z], [home[0] + .24, home[1] + .16, home[2] + .115], (t - 9.1) / .9), true); }
-      }
-      else if (t > 6.3) {
+      slip.position.set(...blend([1.24, .68, .45], worldPoint([1.12, .77, .65]), receive)); slip.rotation.z = receive * -.08;
+      if (t > 7.3) {
+        holdAt(1, slip, receiptGrip);
+        if (t > 9.1) {
+          const p = companion.hands[1].position;
+          companion.poseArm(1, blend([p.x, p.y, p.z], [home[0] + cardGrip[0], home[1], home[2] + cardGrip[2]], (t - 9.1) / .9));
+        }
+      } else if (t > 6.6) {
         stage.updateMatrixWorld(true);
-        const destination = companion.root.worldToLocal(slip.localToWorld(new THREE.Vector3(-.21, .4, .07)));
-        const raised: V3 = [.65, 1.65, .7];
-        companion.poseArm(1, t < 6.65 ? blend([home[0] + .24, home[1] + .16, home[2] + .115], raised, (t - 6.3) / .35) : blend(raised, [destination.x, destination.y, destination.z], (t - 6.65) / .45), true);
+        const destination = companion.root.worldToLocal(slip.localToWorld(new THREE.Vector3(...receiptGrip)));
+        companion.poseArm(1, blend([home[0] + cardGrip[0], home[1], home[2] + cardGrip[2]], [destination.x, destination.y, destination.z], (t - 6.6) / .7));
       }
       machine.lamp.material = t > 3.4 && t < 6 ? green : lilac;
-      companion.lookAtPoint(t < 6.3 ? target : [slip.position.x, slip.position.y + .45, slip.position.z]);
+      companion.lookAtPoint(t < 6.6 ? target : [slip.position.x, slip.position.y + .45, slip.position.z]);
     });
   } else if (kind === 'wallet') {
-    companion.root.position.set(.5, 0, .22); companion.root.rotation.y = -.1;
+    companion.root.position.set(.85, 0, .4); companion.root.rotation.y = -.1;
     const purse = wallet(stage); purse.position.set(-.85, .8, .5); purse.scale.setScalar(1.6);
     const payment = card(stage); payment.scale.setScalar(1.35);
     timers.push((time) => {
       const lift = .5 - .5 * Math.cos((time % 7) / 7 * TAU);
-      payment.position.set(-.85 + ease((lift - .5) * 2) * .1, 1.3 + lift * .43, .58);
-      holdAt(0, payment, [.2, .16, .12]); companion.poseArm(1, [.67, .92, .2]);
+      payment.position.set(-1.12, 1.2 + lift * .40, .65);
+      holdAt(0, payment, [.4, .13, .14]); companion.poseArm(1, [.67, .92, .2]);
       companion.lookAtPoint([payment.position.x, payment.position.y, payment.position.z]); walk(-1);
     }); stillTime = 3.5;
   } else if (kind === 'policy') {
@@ -272,10 +272,10 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     const payment = card(stage);
     timers.push((time) => {
       const t = time % 7, present = ease((t - .8) / 1.5) * (1 - ease((t - 4.8) / 1.7)), open = ease((t - 2.5) / .7) * (1 - ease((t - 4.5) / .8));
-      companion.root.position.set(-1.05 + present * .93, 0, .1 + present * .15);
+      companion.root.position.set(-1.05 + present * .60, 0, .1 + present * .15);
       walk(t >= .8 && t < 2.3 ? (t - .8) / 1.5 : t >= 4.8 && t < 6.5 ? (t - 4.8) / 1.7 : -1);
       payment.position.set(...blend(worldPoint([.65, 1.25, .55]), [1.08, 1.1, .67], present)); payment.rotation.set(0, .1, 0);
-      holdAt(1, payment, [-.18, .13, .12]); companion.poseArm(0, [-.65, 1.02, .25]);
+      holdAt(1, payment, [-.38, .13, .19]); companion.poseArm(0, [-.65, 1.02, .25]);
       shackle.rotation.y = -open * .9; shackle.position.y = .29 + open * .15; approved.scale.setScalar(.8 + open * .12); approved.visible = t > 2.3 && t < 5.2;
       companion.lookAtPoint(blend([payment.position.x, payment.position.y, payment.position.z], [1.25, 1.7, .1], open));
     }); stillTime = 3.6;
@@ -291,16 +291,16 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     timers.push((time) => {
       const t = time % 7, feed = ease(t / 3), take = ease((t - 3.3) / 1.2), reset = ease((t - 5.8) / 1.2);
       const approach = ease((t - 1.3) / 1.3) * (1 - ease((t - 5.2) / 1.5));
-      companion.root.position.set(.85 - approach * .37, 0, .25 + approach * .2);
+      companion.root.position.set(.85 - approach * .15, 0, .25 + approach * .2);
       walk(t >= 1.3 && t < 2.6 ? (t - 1.3) / 1.3 : t >= 5.2 && t < 6.7 ? (t - 5.2) / 1.5 : -1);
       slip.scale.y = (.1 + feed * .9) * (1 - reset);
-      slip.position.set(...blend([-.874, 1.08, .648], worldPoint([-1.17, 1.25, .65]), take));
+      slip.position.set(...blend([-.874, 1.08, .648], worldPoint([-1.45, 1.21, .65]), take));
       slip.rotation.set(-.2 * (1 - take), -.12, -.035 * take);
-      const rest: V3 = [-.65, 1.02, .25], raised: V3 = [-.6, 1.65, .35];
+      const rest: V3 = [-.65, 1.02, .25], raised: V3 = [-.9, 1.3, .35];
       if (t < 1.6) companion.poseArm(0, blend(rest, raised, (t - .8) / .8), true);
       else {
         stage.updateMatrixWorld(true);
-        const grip = companion.root.worldToLocal(slip.localToWorld(new THREE.Vector3(.38, .78, .12)));
+        const grip = companion.root.worldToLocal(slip.localToWorld(new THREE.Vector3(.51, .5, .19)));
         const reach = blend(raised, [grip.x, grip.y, grip.z], (t - 1.6) / 1.3);
         companion.poseArm(0, blend(reach, rest, reset), true);
       }
@@ -310,8 +310,8 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   }
   function update(time: number) {
     maxReachError = 0;
-    timers.forEach(animate => animate(time)); companion.head.position.y = 2.28 + Math.sin(time * 1.5) * .018;
-    const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60); companion.eyes.forEach(eye => { eye.scale.y = .105 * (1 - blink * .92); });
+    timers.forEach(animate => animate(time)); companion.head.position.y = companion.headRestY + Math.sin(time * 1.5) * .018;
+    const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60); companion.eyes.forEach(eye => { eye.scale.y = 1 - blink * .92; });
   }
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let visible = true, alive = true, unavailable = false, frame = 0, elapsed = 0, last = performance.now();
