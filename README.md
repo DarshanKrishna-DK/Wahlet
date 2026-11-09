@@ -6,7 +6,7 @@
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
 
-**Release status:** implementation and acceptance are in progress. This is a testnet-only build. Typecheck, production build, browser layout checks, real WBT transfers, and completed-payment persistence through a daemon restart have passed. Claude Code discovers all seven tools. A real USDT transfer and bounded Permit2 approval have also completed. The browser paid API flow settled 0.001 USDT and returned the resource; retry returned the same receipt. Assistant-driven payment acceptance and interrupted-payment recovery remain pending. Mainnet is disabled.
+**Release status:** implementation and acceptance are in progress. This is a testnet-only build. Typecheck, production build, browser layout checks, real WBT transfers, and completed-payment persistence through a daemon restart have passed. Claude Code discovers all seven tools. A real USDT transfer and bounded Permit2 approval have also completed. The browser paid API flow settled 0.001 USDT and returned the resource; retry returned the same receipt. ChatGPT also read balances and completed a real 0.001 USDT paid API request through the private MCP tunnel. Interrupted-payment recovery remains pending. Mainnet is disabled.
 
 ## Features
 
