@@ -6,7 +6,7 @@
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
 
-**Release status:** implementation and acceptance are in progress. This is a testnet-only build. Typecheck, production build, browser layout checks, real WBT transfers, and completed-payment persistence through a daemon restart have passed. Claude Code discovers all seven tools. Successful USDT and paid API settlement, assistant-driven payment acceptance, and interrupted-payment recovery remain pending. Mainnet is disabled.
+**Release status:** implementation and acceptance are in progress. This is a testnet-only build. Typecheck, production build, browser layout checks, real WBT transfers, and completed-payment persistence through a daemon restart have passed. Claude Code discovers all seven tools. A real USDT transfer and bounded Permit2 approval have also completed. Paid API settlement, assistant-driven payment acceptance, and interrupted-payment recovery remain pending. Mainnet is disabled.
 
 ## Features
 
@@ -136,6 +136,6 @@ docs/              Private planning and verification, kept locally
 
 The product handbook is available at /docs in the running website. Private PRD, design, planning, manual setup, verification, and launch-gate records remain in the local docs folder and are excluded from this repository.
 
-The website can generate configuration and a direct Cursor installation link for a supplied HTTPS MCP endpoint. Managed endpoint deployment, authentication, and direct-install acceptance remain release gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
+The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Managed endpoint deployment, authentication, and direct-install acceptance remain release gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
 
 Required notices for reused code and assets are retained under [licenses](licenses/upstream-MIT.txt).
