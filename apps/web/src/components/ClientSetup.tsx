@@ -9,6 +9,7 @@ export default function ClientSetup(){
   const entry=folder+'/dist/mcp/index.js';
   const server={command:'node',args:[entry]};
   const config=JSON.stringify({mcpServers:{wahlet:server}},null,2);
+  const codexConfig=`[mcp_servers.wahlet]\ncommand = "node"\nargs = [${JSON.stringify(entry)}]`;
   const encoded=btoa(Array.from(new TextEncoder().encode(JSON.stringify(server)),byte=>String.fromCharCode(byte)).join(''));
   const installLink=`cursor://anysphere.cursor-deeplink/mcp/install?name=wahlet&config=${encodeURIComponent(encoded)}`;
   const quotedEntry="'"+entry.replaceAll("'","''")+"'";
@@ -22,7 +23,7 @@ export default function ClientSetup(){
       {client==='claude-desktop'&&<p>In Claude Desktop, open Settings, Developer, Edit Config. Merge this entry into <code>claude_desktop_config.json</code>, preserve other servers, then fully quit and restart Claude.</p>}
       {client==='cursor'&&<p>Merge this entry into your project <code>.cursor/mcp.json</code>, then enable Wahlet in Cursor MCP settings.</p>}
       {client==='other'&&<p>Add a local stdio server named Wahlet. Use command <code>node</code> with the absolute entry path below as its only argument.</p>}
-      {(client==='claude-code'||client==='codex')?<><p>Run this command in PowerShell, then reopen your assistant and review the Wahlet tools. For other shells, use the JSON configuration below.</p><CopyCode text={client==='codex'?`codex mcp add wahlet -- node ${quotedEntry}`:`claude mcp add --transport stdio wahlet -- node ${quotedEntry}`}/><CopyCode text={config}/></>:<CopyCode text={config}/>}</>)}
+      {(client==='claude-code'||client==='codex')?<><p>Run this command in PowerShell, then reopen your assistant and review the Wahlet tools.</p><CopyCode text={client==='codex'?`codex mcp add wahlet -- node ${quotedEntry}`:`claude mcp add --transport stdio wahlet -- node ${quotedEntry}`}/>{client==='codex'?<><p>Alternatively, merge this TOML section into <code>~/.codex/config.toml</code>. On Windows, that file is in your user profile under <code>.codex</code>. Preserve other settings and update an existing Wahlet section instead of adding it twice.</p><CopyCode text={codexConfig}/><p>Run <code>codex mcp list</code> to confirm registration, then verify the wallet through the chat prompt below.</p></>:<><p>Alternatively, merge this JSON into your project <code>.mcp.json</code>, preserving other servers, and approve the project server when Claude Code asks.</p><CopyCode text={config}/></>}</>:<CopyCode text={config}/>}</>)}
     <h2>Try it in your own chat.</h2><p>Confirm that Wahlet appears in the assistant tool list, then paste:</p><CopyCode text="Use Wahlet to check my wallet address, network, WBT and USDT balances, and spending report. Do not send a payment."/>
     <p>A connection is ready when your assistant returns real tool results. A copied configuration alone does not verify it.</p>
   </div>;
