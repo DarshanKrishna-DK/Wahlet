@@ -6,7 +6,7 @@
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
 
-**Release status:** implementation and acceptance are in progress. This is a testnet-only build. Typecheck, production build, browser layout checks, real WBT transfers, and completed-payment persistence through a daemon restart have passed. Claude Code discovers all seven tools. A real USDT transfer and bounded Permit2 approval have also completed. The browser paid API flow settled 0.001 USDT and returned the resource; retry returned the same receipt. ChatGPT also read balances and completed a real 0.001 USDT paid API request through the private MCP tunnel. Browser interruption and a daemon crash after settlement persistence both recovered the original payment and resource without another charge. Remaining release checks are in progress. Mainnet is disabled.
+**Release status:** local-first testnet acceptance verified. Real transfers, paid API delivery, same-operation replay, restart and crash recovery, browser-wallet refusal flows, responsive layouts, and reduced motion have been exercised. ChatGPT completed a real purchase through the private MCP tunnel. Cursor connects with all seven tools. Mainnet is disabled; production launch requires the separate migration and security gates below.
 
 ## Features
 
@@ -120,6 +120,19 @@ An external paid API must offer the configured network, token, and payment schem
 
 `submitted` means pending. `confirmed` means successful L2 inclusion. `delivered` additionally means the paid HTTP request returned a successful response. Ethereum finality is a separate stage. Transaction evidence is maintained in the local verification records.
 
+## Verified testnet transactions
+
+These are completed acceptance transactions, not a guarantee of production readiness. Receipt status was rechecked against Whitechain Sepolia on 2026-11-09.
+
+| Journey | Amount | Receipt |
+| --- | --- | --- |
+| Agent WBT transfer | 0.01 WBT | [Successful transfer](https://explorer.testnet.whitechain.io/tx/0x99750eafeca0f9ba8ea121ffa50172ee232b43edf67b009efe1e2193908447ee) |
+| Agent USDT transfer | 0.01 USDT | [Successful transfer](https://explorer.testnet.whitechain.io/tx/0x1d7e664453bff67b62e54367b25be125339887b3e4840a96aa44d86680abfc68) |
+| ChatGPT paid API request | 0.001 USDT | [Verified purchase](https://explorer.testnet.whitechain.io/tx/0x6b1bd26ec78ba0e8644db7f1b1cc285d4cfa3845f948b0a29042dc87676680ab) |
+| Payment recovered after daemon crash | 0.001 USDT | [Original settlement](https://explorer.testnet.whitechain.io/tx/0x380ea5236c4f6da90c0bf1fbb63bfb0d91b5adf7994c3d55ea0529320dea9b2d) |
+
+The recovered request returned the original transaction and resource. Replaying the ChatGPT request also reused its receipt. Over-budget transfers and unapproved API origins were refused with unchanged balances and commitments.
+
 ## Repository layout
 
 ```text
@@ -154,6 +167,6 @@ docs/              Private planning and verification, kept locally
 
 The product handbook is available at /docs in the running website. Private PRD, design, planning, manual setup, verification, and launch-gate records remain in the local docs folder and are excluded from this repository.
 
-The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Managed endpoint deployment, authentication, and direct-install acceptance remain release gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
+The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a verified direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Public package publishing and managed endpoint deployment remain future distribution gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
 
 Required notices for reused code and assets are retained under [licenses](licenses/upstream-MIT.txt).
