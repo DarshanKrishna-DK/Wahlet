@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { walletError } from '../apps/web/src/components/browser-wallet-error.ts';
+assert.equal(walletError({code:4100,message:'Unauthorized'},'fallback').reconnect,true);
+assert.match(walletError({code:4100},'fallback').message,/Reconnect/);
+assert.equal(walletError({code:4001},'fallback').reconnect,false);
+assert.match(walletError({code:-32002},'fallback').message,/already pending/);
+assert.equal(walletError({code:-32603,message:'RPC unavailable'},'fallback').message,'RPC unavailable');
+assert.equal(walletError(new Error('Wrong network'),'fallback').message,'Wrong network');
+for(const error of [null,undefined,'failure',{message:4},{message:' '}]) assert.equal(walletError(error,'fallback').message,'fallback');
+console.log('Browser wallet provider errors preserve details and identify permission recovery');
