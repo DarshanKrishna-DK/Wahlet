@@ -1,4 +1,4 @@
-<p align="center"><img src="apps/web/public/logo.png" alt="Wahlet" width="120" /></p>
+<p align="center"><img src="apps/web/public/Wahlet_Logo.png" alt="Wahlet" width="120" /></p>
 <h1 align="center">Wahlet</h1>
 <p align="center">Give your agent a wallet. Keep the limits.</p>
 <p align="center">Local-first MCP payments on Whitechain Sepolia.</p>
@@ -170,3 +170,7 @@ The product handbook is available at /docs in the running website. Private PRD, 
 The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a verified direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Public package publishing and managed endpoint deployment remain future distribution gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
 
 Required notices for reused code and assets are retained under [licenses](licenses/upstream-MIT.txt).
+
+## License
+
+Wahlet is licensed under the [Apache License 2.0](LICENSE). Third-party code, fonts, and assets retain their original licenses and attribution notices in [licenses](licenses). The website links to both the project license and those notices from its footer.
