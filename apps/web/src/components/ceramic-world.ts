@@ -97,8 +97,8 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     ball(root, [.042, .042, .008], [.18, .08, .033], ceramic); ball(root, [.042, .042, .008], [.225, .08, .034], pearl); return root;
   }
   function wallet(parent: THREE.Object3D) {
-    const root = group(parent); round(root, [.88, .62, .07], [0, 0, -.085], .1, violet);
-    round(root, [.8, .54, .012], [0, .025, -.044], .065, dark);
+    const root = group(parent); round(root, [.88, .54, .07], [0, 0, -.085], .1, violet);
+    round(root, [.8, .46, .012], [0, .015, -.044], .065, dark);
     round(root, [.9, .45, .08], [0, -.105, .105], .085, lilac);
     for (const side of [-1, 1]) round(root, [.045, .39, .18], [side * .405, -.11, .015], .018, violet);
     round(root, [.80, .045, .18], [0, -.295, .015], .018, violet);
@@ -136,7 +136,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     mesh(head, new THREE.CylinderGeometry(.025 * unit, .025 * unit, .17 * unit, 8), rose, [0, .45 * unit, 0]);
     mesh(head, new THREE.SphereGeometry(.065 * unit, 12, 8), lit, [0, .56 * unit, 0]);
     const pocketSide = kind === 'receipt' ? -1 : 1;
-    const pocket = group(root, [pocketSide * .28, .46, -.32]); pocket.visible = kind === 'receipt';
+    const pocket = group(root, [pocketSide * .28, .46, -.32]); pocket.visible = kind === 'receipt' || kind === 'hero';
     round(pocket, [.28, .23, .035], [0, 0, 0], .035, rose);
     round(pocket, [.28, .20, .035], [0, -.015, -.10], .035, rose);
     for (const side of [-1, 1]) round(pocket, [.025, .19, .10], [side * .127, -.015, -.05], .01, rose);
@@ -233,39 +233,96 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
   const bubbleTexture = new THREE.CanvasTexture(bubbleCanvas); bubbleTexture.colorSpace = THREE.SRGBColorSpace;
   const bubbleMaterial = new THREE.SpriteMaterial({ map: bubbleTexture, transparent: true, depthWrite: false, toneMapped: false }); spriteMaterials.push(bubbleMaterial);
   const thought = new THREE.Sprite(bubbleMaterial); thought.scale.set(.66, .50, 1); stage.add(thought);
+  const cameraRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  let walking = false;
+  const footLift = [0, 0];
   const mood = (time: number, pleased: number) => {
     emotion = pleased; companion.mouth.scale.set(1 + pleased * .12, 1 + pleased * .30, 1);
-    thought.position.set(companion.root.position.x - .32, 2.03 + Math.sin(time * .8) * .025, companion.root.position.z);
+    thought.position.set(...worldPoint([0, companion.headRestY + .65 + Math.sin(time * .8) * .015, 0])).addScaledVector(cameraRight, .70);
     thought.material.opacity = .68 + pleased * .26;
-    companion.feet.forEach(foot => { foot.position.y = 0; });
+
     contactShadows[0].position.x = companion.root.position.x; contactShadows[0].position.z = companion.root.position.z;
   };
-  const cycle = kind === 'receipt' ? 10 : 8;
-  let stillTime = 3.5;
+  const walkBetween = (time: number, start: number, end: number, from: V3, to: V3, yaw: number, steps = 6) => {
+    const progress = THREE.MathUtils.clamp((time - start) / (end - start), 0, 1), phase = progress * steps;
+    companion.root.position.fromArray(from).lerp(new THREE.Vector3(...to), progress);
+    companion.root.rotation.y = yaw;
+    walking = time > start && time < end;
+    const delta = new THREE.Vector3(...to).sub(new THREE.Vector3(...from));
+    const inverse = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -yaw);
+    for (let i = 0; i < 2; i++) {
+      const shifted = phase - i;
+      const stride = shifted < 0 ? 0 : Math.floor(shifted / 2);
+      const local = shifted < 0 ? 0 : shifted - stride * 2;
+      const advance = shifted < 0 ? 0 : (stride * 2 + 2 * ease(Math.min(local, 1))) / steps;
+      footLift[i] = shifted < 0 || local >= 1 ? 0 : Math.sin(local * Math.PI) * .095;
+      const offset = delta.clone().multiplyScalar(advance - progress).applyQuaternion(inverse);
+      companion.feet[i].position.set(offset.x, footLift[i], offset.z);
+    }
+  };
+  const extractDirection = (lift: number): V3 => {
+    const phase = ease(lift), x = .65 * phase, y = .08 + .27 * phase; return [x, y, Math.sqrt(1 - x * x - y * y)];
+  };
+  const cardGrip: V3 = [.23, .12, -.02];
+  const addWallet = () => {
+    const purse = wallet(companion.root); purse.name = 'wallet'; purse.scale.setScalar(.48); purse.position.set(.1595, .45, .33);
+    curve(companion.root, [[-.24, .78, .28], [-.07, .66, .29], [.11, .54, .31]], .021, lilac);
+    return purse;
+  };
+  const cycle = kind === 'hero' ? 22 : kind === 'receipt' ? 10 : kind === 'policy' ? 11 : 9;
+  let stillTime = 7.7;
   if (kind === 'hero') {
-    const machine = terminal(stage); machine.root.name = 'terminal'; machine.root.scale.setScalar(.75); machine.root.position.set(.84, 0, .08);
-    const purse = wallet(companion.root); purse.name = 'wallet'; purse.scale.setScalar(.48); purse.position.set(-.25, .47, .39);
-    const tucked = card(purse); tucked.scale.setScalar(.70); tucked.position.set(0, .23, .016);
-    const payment = card(stage); payment.scale.setScalar(.50);
+    const machine = terminal(stage); machine.root.name = 'terminal'; machine.root.scale.setScalar(.75); machine.root.position.set(.8, 0, -.15);
+    round(machine.root, [.44, .035, .35], [.15, .65, .53], .015, pearl);
+    const purse = addWallet(), payment = card(stage); payment.name = 'payment-card'; payment.scale.setScalar(.50);
+    const home: V3 = [-.90, 0, .80], arrived: V3 = [1.55, 0, .72], departure: V3 = [1.55, 0, .94];
+    const pickup: V3 = [0, .35, Math.sqrt(1 - .35 * .35)], outward: V3 = [.75, .10, -.65], back: V3 = [0, 0, -1];
+    companion.root.position.set(...arrived); companion.root.rotation.y = Math.PI; companion.poseSleeve(1, pickup);
+    const receiptGrip: V3 = [.15, .29, .055];
+    const feedBase = palmPoint(1).sub(new THREE.Vector3(...receiptGrip));
+    const slip = receipt(stage, .22, .29); slip.name = 'active-paper'; const clipFeed = paperFeed(slip, feedBase.y);
+    const stored = receipt(companion.root, .22, .29); stored.name = 'stored-paper'; stored.position.set(.2395, .4035, -.375);
+    const resetCard = () => { payment.position.set(...worldPoint([.1595, .5991, .338974])); payment.rotation.set(0, companion.root.rotation.y, 0); };
     timers.push((time) => {
-      const t = time % cycle, present = ease((t - .8) / 1.4) * (1 - ease((t - 5.5) / 1.6));
-      companion.root.position.set(-.52 + present * .32, 0, .22); companion.root.rotation.y = .06 + present * .12;
-      companion.poseSleeve(0, [-.12, -.65, .75]);
-      companion.poseSleeve(1, blend([.18, -.85, .49], [.14, .16, .98], present));
-      placeInPalm(payment, 1, [-.17, .02, -.04]);
-      machine.lamp.material = present > .9 ? green : lilac;
-      companion.lookAtPoint([.84, 1.0, .45]); mood(t, present); receiptPhase = 'card-presented';
+      const t = time % cycle;
+      companion.root.position.set(...home); companion.root.rotation.y = .10;
+      if (t >= 2.2 && t < 2.7) companion.root.rotation.y = THREE.MathUtils.lerp(.10, Math.PI / 2, ease((t - 2.2) / .5));
+      else if (t >= 2.7 && t < 6.3) walkBetween(t, 2.7, 6.3, home, arrived, Math.PI / 2, 12);
+      else if (t >= 6.3 && t < 12.1) {
+        companion.root.position.set(...arrived);
+        companion.root.rotation.y = t < 7 ? THREE.MathUtils.lerp(Math.PI / 2, Math.PI, ease((t - 6.3) / .7)) : t < 11.4 ? Math.PI : THREE.MathUtils.lerp(Math.PI, Math.PI * 1.5, ease((t - 11.4) / .7));
+        if (t >= 11.4) walkBetween(t, 11.4, 12.1, arrived, departure, companion.root.rotation.y, 2);
+      } else if (t >= 12.1 && t < 15.7) walkBetween(t, 12.1, 15.7, departure, home, Math.PI * 1.5, 12);
+      else if (t >= 15.7) companion.root.rotation.y = t < 18 ? Math.PI * 1.5 : THREE.MathUtils.lerp(Math.PI * 1.5, TAU + .10, ease((t - 18) / 1.2));
+      companion.poseSleeve(0, restLeft);
+      const lift = ease((t - .5) / 1.1) * (1 - ease((t - 9.2) / .8));
+      const present = ease((t - 6.3) / .7) * (1 - ease((t - 8.4) / .8));
+      const carry = ease((t - 1.6) / .6) * (1 - ease((t - 6.3) / .7));
+      companion.poseSleeve(1, blend(blend(extractDirection(lift), extractDirection(0), carry), pickup, present));
+      purse.rotation.x = -.24 * Math.sin(lift * Math.PI);
+      if (t < 10) placeInPalm(payment, 1, cardGrip, .6 * carry + Math.PI * present); else resetCard();
+      if (t >= 10 && t < 10.8) companion.poseSleeve(1, blend(extractDirection(0), pickup, (t - 10) / .8));
+      else if (t >= 10.8) companion.poseSleeve(1, path(t, [[10.8, pickup], [11.4, [.70, .30, .64]], [12.1, outward], [15.7, outward], [16.7, back], [17.1, back], [17.8, [.28, -.5, -.82]], [18.5, restRight], [22, restRight]]));
+      const feed = ease((t - 8.1) / 1.4);
+      clipFeed(t < 10.8); slip.visible = t >= 8.1 && t < 17.1;
+      if (t < 10.8) { slip.position.copy(feedBase); slip.position.y -= .29 * (1 - feed); slip.rotation.set(0, 0, 0); }
+      else placeInPalm(slip, 1, receiptGrip, Math.PI * (1 - ease((t - 11.4) / .7)));
+      stored.visible = t < 11.4 || t >= 17.1;
+      machine.lamp.material = t > 7.2 && t < 10.2 ? green : lilac;
+      const gaze = t < 2.2 || t >= 9.2 && t < 10.8 ? [payment.position.x, payment.position.y, payment.position.z] as V3 : t < 11.4 ? [.8, 1.1, .20] as V3 : worldPoint([0, 1.0, 2]);
+      companion.lookAtPoint(gaze); mood(t, t >= 7.2 && t < 19 ? 1 : .15);
+      receiptPhase = t < 1.6 ? 'extract-card' : t < 2.7 ? 'turn-to-api' : t < 6.3 ? 'walk-to-api' : t < 8.4 ? 'present-card' : t < 10 ? 'return-card' : t < 10.8 ? 'reach-receipt' : t < 12.1 ? 'collect-receipt' : t < 15.7 ? 'walk-away' : t < 17.1 ? 'pocket-receipt' : 'stored';
     });
   } else if (kind === 'wallet') {
-    const purse = wallet(companion.root); purse.name = 'wallet'; purse.position.set(0, .48, .43); purse.scale.setScalar(.68);
-    const payment = card(purse); payment.scale.setScalar(.78); payment.position.set(-.04, .22, .014);
+    const purse = addWallet(), payment = card(stage); payment.name = 'payment-card'; payment.scale.setScalar(.5);
     timers.push((time) => {
-      const t = time % cycle, inspect = .5 - .5 * Math.cos(t / cycle * TAU);
-      companion.root.position.set(0, 0, .2); companion.root.rotation.y = -.12 + inspect * .15;
-      companion.poseSleeve(0, [-.12, -.40, .91]); companion.poseSleeve(1, [.12, -.40, .91]);
-      purse.rotation.x = -.04 * inspect; payment.position.y = .22 + .035 * inspect;
-      companion.lookAtPoint(worldPoint([0, .65, .95])); mood(t, inspect); receiptPhase = 'wallet-check';
-    });
+      const t = time % cycle, lift = ease((t - .6) / 1.5) * (1 - ease((t - 5.5) / 1.6));
+      companion.root.position.set(0, 0, .2); companion.root.rotation.y = -.12 + lift * .25;
+      companion.poseSleeve(0, restLeft); companion.poseSleeve(1, extractDirection(lift));
+      purse.rotation.x = -.24 * Math.sin(lift * Math.PI); placeInPalm(payment, 1, cardGrip);
+      companion.lookAtPoint([payment.position.x, payment.position.y, payment.position.z]); mood(t, lift);
+      receiptPhase = t < 2.1 ? 'extract-card' : t < 5.5 ? 'inspect-card' : t < 7.1 ? 'return-card' : 'stored';
+    }); stillTime = 3.5;
   } else if (kind === 'policy') {
     const station = group(stage, [.83, 0, .02]); station.name = 'policy'; station.scale.setScalar(.74);
     round(station, [1.1, .23, .92], [0, .13, 0], .11, lilac); round(station, [.85, .74, .65], [0, .59, 0], .17, ceramic);
@@ -275,12 +332,16 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     const shackle = group(lock, [-.25, .29, 0]); curve(shackle, [[0, 0, 0], [0, .33, 0], [.25, .5, 0], [.5, .33, 0], [.5, 0, 0]], .065, ceramic);
     const payment = card(stage); payment.scale.setScalar(.5);
     timers.push((time) => {
-      const t = time % cycle, present = ease((t - .8) / 1.4) * (1 - ease((t - 5.4) / 1.6)), open = ease((t - 2.5) / .8) * (1 - ease((t - 5) / .8));
-      companion.root.position.set(-.45 + present * .18, 0, .28); companion.root.rotation.y = .16;
+      const t = time % cycle, present = ease((t - 2.5) / 1.1) * (1 - ease((t - 6.4) / 1)), open = ease((t - 4) / .8) * (1 - ease((t - 6.2) / .8));
+      companion.root.position.set(-.66, 0, .28); companion.root.rotation.y = .16;
+      if (t >= .8 && t < 2.4) walkBetween(t, .8, 2.4, [-.66, 0, .28], [-.27, 0, .28], Math.PI / 2, 2);
+      else if (t >= 2.4 && t < 7.8) { companion.root.position.set(-.27, 0, .28); companion.root.rotation.y = t < 2.9 ? THREE.MathUtils.lerp(Math.PI / 2, .35, ease((t - 2.4) / .5)) : t < 7.3 ? .35 : THREE.MathUtils.lerp(.35, -Math.PI / 2, ease((t - 7.3) / .5)); }
+      else if (t >= 7.8 && t < 9.4) walkBetween(t, 7.8, 9.4, [-.27, 0, .28], [-.66, 0, .28], -Math.PI / 2, 2);
+      else if (t >= 9.4) companion.root.rotation.y = THREE.MathUtils.lerp(-Math.PI / 2, .16, ease((t - 9.4) / .5));
       companion.poseSleeve(0, restLeft); companion.poseSleeve(1, blend([.18, -.85, .49], [.14, .16, .98], present));
       placeInPalm(payment, 1, [-.17, .02, -.04]);
       shackle.rotation.y = -open * .8; shackle.position.y = .29 + open * .14; approved.visible = open > .2;
-      companion.lookAtPoint([.83, 1.2, .1]); mood(t, open); receiptPhase = 'policy-check';
+      companion.lookAtPoint([.83, 1.2, .1]); mood(t, open); receiptPhase = t < 2.4 ? 'approach-policy' : t < 4 ? 'present-card' : t < 6.2 ? 'authorized' : t < 7.8 ? 'withdraw-card' : 'step-away';
     });
   } else {
     companion.root.position.set(.42, 0, .55); companion.root.rotation.y = -.25;
@@ -311,7 +372,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     }); stillTime = 3.5;
   }
   function update(time: number) {
-
+    walking = false; footLift.fill(0); companion.feet.forEach(foot => foot.position.set(0, 0, 0));
     timers.forEach(animate => animate(time)); companion.head.position.y = companion.headRestY + Math.sin(time * 1.5) * .018;
     const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60); companion.eyes.forEach(eye => { eye.scale.y = (1 - blink * .92) * (1 - emotion * .16); });
   }
@@ -342,5 +403,5 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     renderer.domElement.removeEventListener('webglcontextlost', contextLost); renderer.domElement.removeEventListener('webglcontextrestored', contextRestored);
     spriteMaterials.forEach(value => value.dispose()); bubbleTexture.dispose(); shadowMaterial.dispose(); shadowTexture.dispose(); environmentMap.dispose(); renderer.dispose(); renderer.domElement.remove();
   };
-  return Object.assign(dispose, { renderPose: (time: number) => { update(time); renderer.render(scene, camera); return { receiptPhase, bodyYaw: companion.root.rotation.y, headYaw: companion.head.rotation.y, sleeveLengths: companion.armJoints.map(([a, b]) => a.distanceTo(b)), sleeveCount: 2, limbDesign: 'single-sleeve' }; } });
+  return Object.assign(dispose, { renderPose: (time: number) => { update(time); renderer.render(scene, camera); return { receiptPhase, bodyYaw: companion.root.rotation.y, headYaw: companion.head.rotation.y, sleeveLengths: companion.armJoints.map(([a, b]) => a.distanceTo(b)), sleeveCount: 2, limbDesign: 'single-sleeve', cycle, walking, rootPosition: companion.root.position.toArray(), footLift: [...footLift], feetWorld: companion.feet.map((foot, index) => foot.localToWorld(new THREE.Vector3((index === 0 ? -1 : 1) * .19, 0, .052)).toArray()) }; } });
 }
