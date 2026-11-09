@@ -55,17 +55,17 @@ Write tools accept `operation_id`. Reuse it for the same payment after interrupt
 Requires Node.js 24 or newer and npm. In the project directory:
 
 ```powershell
-npm.cmd install
-Copy-Item .env.example .env
+npm.cmd ci
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm.cmd run build
 npm.cmd start
 ```
 
-On macOS or Linux, use `npm` and `cp .env.example .env`. Do not overwrite an existing configuration. Keep the daemon running. In a second terminal, run `npm.cmd run console` (or `npm run console`) to open the authorized local console. A bare console URL does not grant owner access. Run this launcher again after each daemon restart.
+On macOS or Linux, use `npm ci` and `test -f .env || cp .env.example .env`. Preserve an existing configuration. Keep the daemon running. In a second terminal, run `npm.cmd run console` (or `npm run console`) to open the authorized local console. A bare console URL does not grant owner access. Run this launcher again after each daemon restart.
 
 1. Create the agent wallet with a password of at least 12 characters. Back up the encrypted vault and password securely.
 2. Connect your browser wallet and approve Whitechain Sepolia, chain 1874.
-3. Obtain test tokens through the [official faucet](https://faucet.testnet.whitechain.io). Fund the agent with WBT and official test USDT.
+3. Claim test WBT through the [official faucet](https://faucet.testnet.whitechain.io). Obtain the exact official test USDT separately, then fund the agent. A WBT faucet claim does not provide USDT.
 4. Review and save the independent WBT and USDT spending limits.
 5. For the included paid API, create a separate merchant wallet and fund it with test WBT. Unlock both wallets.
 6. Approve a bounded USDT allowance from the console, then request `http://127.0.0.1:4021/premium/insight`. The included API charges 0.001 test USDT.
