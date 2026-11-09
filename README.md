@@ -2,6 +2,7 @@
 <h1 align="center">Wahlet</h1>
 <p align="center">Give your agent a wallet. Keep the limits.</p>
 <p align="center">Local-first MCP payments on Whitechain Sepolia.</p>
+<p align="center"><a href="https://wahlet.vercel.app">Website</a> · <a href="https://wahlet.vercel.app/docs">Documentation</a> · <a href="https://wahlet.vercel.app/install">Connect your assistant</a></p>
 <p align="center"><img alt="Network: Whitechain testnet" src="https://img.shields.io/badge/network-Whitechain_testnet-526e48" /> <img alt="Runtime: Node 24" src="https://img.shields.io/badge/runtime-Node_24-202321" /> <img alt="Protocol: MCP and x402" src="https://img.shields.io/badge/protocol-MCP_%2B_x402-526e48" /></p>
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
@@ -154,6 +155,7 @@ docs/              Private planning and verification, kept locally
 | Command | Action |
 | --- | --- |
 | `npm run build` | Compile the daemon and build the website. |
+| `npm run build:web` | Build the public website for Vercel without starting the wallet service. |
 | `npm start` | Start the local daemon, console, and included merchant. |
 | `npm run console` | Open the private owner console in your default browser. |
 | `npm run mcp` | Start the stdio MCP client for the running daemon. |

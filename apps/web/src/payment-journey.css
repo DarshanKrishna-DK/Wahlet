@@ -1,0 +1,25 @@
+.public-site .payment-journey{padding:38px 0 40px}
+.journey-heading{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:35px}
+.protocol .journey-heading .section-kicker{margin:0}
+.protocol .journey-heading p{font-size:12px;color:#8e8899;max-width:none}
+.journey-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr) 80px) minmax(0,1fr);align-items:start}
+.journey-stage{min-width:0}
+.journey-node{height:90px;display:flex;align-items:center;justify-content:center;gap:12px;border:1px solid #d9bdf52e;border-radius:18px;background:linear-gradient(145deg,#c9a8eb0b,#b79bca03);box-shadow:inset 0 1px 0 #fff1}
+.journey-number{font:11px 'Geist Mono',monospace;color:#c4a9dc;flex-shrink:0}
+.protocol .journey-node h3{font-size:21px;line-height:1.2;letter-spacing:-.025em;margin:0;color:#eee5f5;width:auto}
+.protocol .journey-stage>p{font-size:13px;line-height:1.7;margin:16px 5px 0;max-width:none;color:#aaa3b4}
+.journey-arrow{display:block;width:80px;height:40px;margin-top:25px;overflow:visible;filter:drop-shadow(0 1px 4px #b792d324)}
+.journey-arrow-signal{stroke-dashoffset:114;animation:journey-signal 3s cubic-bezier(.4,0,.4,1) infinite}
+.journey-arrow:nth-of-type(2) .journey-arrow-signal{animation-delay:-2s}.journey-arrow:nth-of-type(3) .journey-arrow-signal{animation-delay:-1s}
+@keyframes journey-signal{0%,15%{stroke-dashoffset:114;opacity:0}30%,75%{opacity:1}90%,100%{stroke-dashoffset:0;opacity:0}}
+@media(min-width:768px) and (max-width:1050px){.journey-grid{grid-template-columns:repeat(3,minmax(0,1fr) 64px) minmax(0,1fr)}.journey-arrow{width:64px}.journey-node{gap:8px}.protocol .journey-node h3{font-size:18px}}
+@media(max-width:767px){
+  .journey-heading{display:block;margin-bottom:30px}.protocol .journey-heading p{margin-top:12px}
+  .journey-grid{grid-template-columns:minmax(0,1fr);gap:0}
+  .journey-stage{display:grid;grid-template-columns:140px minmax(0,1fr);gap:18px;align-items:center}
+  .journey-node{height:76px;padding:0 12px;justify-content:flex-start;gap:12px;border-radius:15px}
+  .protocol .journey-node h3{font-size:18px}.protocol .journey-stage>p{margin:0;font-size:12px}
+  .journey-arrow{width:60px;height:36px;transform:rotate(90deg);margin:11px 0 11px 40px}
+}
+@media(max-width:370px){.journey-stage{grid-template-columns:125px minmax(0,1fr);gap:12px}.journey-node{gap:8px}.protocol .journey-node h3{font-size:16px}.journey-arrow{margin-left:32px}}
+@media(prefers-reduced-motion:reduce){.journey-arrow-signal{animation:none;opacity:0}}

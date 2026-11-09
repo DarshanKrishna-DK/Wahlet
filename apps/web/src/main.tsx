@@ -6,3 +6,4 @@ import './styles.css';
 import './product-chrome.css';
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
 import './product-refinements.css';
+import './payment-journey.css';
