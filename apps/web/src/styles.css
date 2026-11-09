@@ -26,3 +26,14 @@
 .protocol-steps article:not(:last-child)::before{content:'';position:absolute;right:12px;top:7px;width:7px;height:7px;border-top:1.5px solid #b9a4d8;border-right:1.5px solid #b9a4d8;transform:rotate(45deg)}
 .chapter-body>.agent-scene.ceramic-scene{width:min(100%,380px);max-width:380px;margin:0 auto 24px;transform:none}
 @media(max-width:767px){.brand>span{font-size:20px}.hero{padding:24px 0 32px;min-height:0;gap:20px}.protocol-steps article,.protocol-steps article:first-child{padding:18px 0 30px 28px;border-bottom:0}.protocol-steps article:not(:last-child)::after{left:4px;right:auto;top:48px;bottom:-5px;border-top:0;border-left:2px dotted #a595be}.protocol-steps article:not(:last-child)::before{left:1px;right:auto;top:auto;bottom:-5px;transform:rotate(135deg)}.docs-nav>.docs-install{display:inline-flex;margin-top:10px}.chapter-body>.agent-scene.ceramic-scene{width:min(100%,330px);margin:0 auto 20px}}
+
+/* Keep intrinsic wallet values inside the console viewport. */
+.console-sidebar,.console-main,.wallet-panel,.balance-grid>div{min-width:0}
+.address-copy .address{min-width:0}
+.balance-grid strong{overflow-wrap:anywhere}
+.console-sidebar nav{min-width:0;max-width:100%}
+@media(max-width:767px){
+  .console-shell{grid-template-columns:minmax(0,1fr)}
+  .wallet-panel .panel-heading{flex-wrap:wrap}
+  .balance-grid strong{font-size:clamp(20px,5.5vw,30px)}
+}
