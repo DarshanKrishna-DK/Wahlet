@@ -136,6 +136,6 @@ docs/              Private planning and verification, kept locally
 
 The product handbook is available at /docs in the running website. Private PRD, design, planning, manual setup, verification, and launch-gate records remain in the local docs folder and are excluded from this repository.
 
-The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Managed endpoint deployment, authentication, and direct-install acceptance remain release gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
+The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Managed endpoint deployment, authentication, and direct-install acceptance remain release gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
 
 Required notices for reused code and assets are retained under [licenses](licenses/upstream-MIT.txt).
