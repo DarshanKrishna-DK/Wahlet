@@ -43,3 +43,7 @@ artifacts/
 .tmp/
 tmp/
 Thumbs.db
+
+# Private project-local assistant configuration
+/.mcp.json
+/.claude/
