@@ -34,7 +34,10 @@ export class Payments {
       const authorizationBlock = await publicClient.getBlock();
       const authorizedBlock = authorizationBlock.number.toString();
       try {
-        const client = new x402Client().register('eip155:1874', new ExactEvmScheme(account, { rpcUrl }));
+        // The ledger has approved and reserved this exact amount under owner policy.
+        const client = new x402Client()
+          .register('eip155:1874', new ExactEvmScheme(account, { rpcUrl }))
+          .setSpendControls({ allowedAssets: [{ network: 'eip155:1874', asset: USDT, maxAmountPerPayment: amount.toString() }] });
         const httpClient = new x402HTTPClient(client);
         const payload = await httpClient.createPaymentPayload({ x402Version: 2, resource: challenge.resource, accepts: [offer] });
         const header = httpClient.encodePaymentSignatureHeader(payload);
