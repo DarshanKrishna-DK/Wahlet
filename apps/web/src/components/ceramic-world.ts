@@ -203,11 +203,11 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
     for (let i = 1; i < keys.length; i++) if (time <= keys[i][0]) return blend(keys[i - 1][1], keys[i][1], (time - keys[i - 1][0]) / (keys[i][0] - keys[i - 1][0]));
     return keys[keys.length - 1][1];
   };
-  const face = (agent: Agent, time: number, expression: 'happy' | 'curious' | 'patient') => {
+  const face = (agent: Agent, time: number) => {
     const blink = Math.pow(Math.max(0, Math.cos(time * 1.17)), 60);
-    agent.eyes.forEach((eye, i) => { eye.scale.y = (1 - blink * .92) * (expression === 'happy' ? .82 : expression === 'curious' && i === 0 ? .65 : 1); });
-    agent.mouth.scale.set(1, expression === 'patient' ? .22 : expression === 'curious' ? .72 : 1.18, 1);
-    agent.mouth.rotation.z = expression === 'curious' ? .12 : 0;
+    agent.eyes.forEach(eye => { eye.scale.y = (1 - blink * .92) * .82; });
+    agent.mouth.scale.set(1, 1.18, 1);
+    agent.mouth.rotation.z = 0;
     agent.head.position.y = agent.headRestY + Math.sin(time * 1.3) * .008;
   };
   function openContainer(parent: THREE.Object3D, center: V3, width: number, height: number, depth: number) {
@@ -273,12 +273,12 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
       placeHeld(payment, companion, 1, grip, 0); payment.position.z = Math.max(payment.position.z + contactCorrection * reach, reader.plane + .055 * cardScale / 2);
       contactGap = payment.position.z - .055 * cardScale / 2 - reader.plane;
       contact = t >= 2 && t <= 3.4; machine.lamp.material = contact ? green : lilac;
-      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .12, reader.root.position.z]); face(companion, t, 'happy');
+      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .12, reader.root.position.z]); face(companion, t);
       [waitingA, waitingB].forEach((agent, index) => {
         const glance = .5 - .5 * Math.cos((t / cycle + index * .28) * TAU);
         agent.root.rotation.y = .66 - glance * .48;
         agent.poseSleeve(0, idleLeft); agent.poseSleeve(1, idleRight);
-        agent.lookAtPoint(glance > .45 ? [5.5, 2.8, 11] : [.8, .85, .1]); face(agent, t + index * 1.8, index === 0 ? 'curious' : 'patient');
+        agent.lookAtPoint(glance > .45 ? [5.5, 2.8, 11] : [.8, .85, .1]); face(agent, t + index * 1.8);
       });
       const feed = ease((t - 2.25) / 1.3), drop = ease((t - 5.9) / .9);
       printedHeight = .28 * feed; clipping(t < 5.9); slip.visible = t >= 2.25 && t < 6.8;
@@ -305,7 +305,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
       const bottom = payment.position.y - .39 * .75 / 2;
       concealedFraction = THREE.MathUtils.clamp((lip - bottom) / (.39 * .75), 0, 1);
       companion.lookAtPoint([payment.position.x, payment.position.y + .10, payment.position.z]);
-      companion.head.rotation.set(.06, -.08, -.05); face(companion, t, 'curious');
+      companion.head.rotation.set(.06, -.08, -.05); face(companion, t);
       receiptPhase = t < 2.2 ? 'extract-from-wallet' : t < 5 ? 'card-clear-of-wallet' : t < 6.8 ? 'return-inside-wallet' : 'card-inside-wallet';
     }); stillTime = 3.1;
   } else if (kind === 'policy') {
@@ -326,7 +326,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
       companion.poseSleeve(0, idleLeft); companion.poseSleeve(1, blend(rest, tap, reach)); placeHeld(payment, companion, 1, grip, 0); payment.position.z = Math.max(payment.position.z + correction * reach, reader.plane + .055 * cardScale / 2);
       contactGap = payment.position.z - .055 * cardScale / 2 - reader.plane; contact = t >= 1.7 && t <= 4;
       shackle.position.y = .18 + open * .105; shackle.rotation.y = open * .80; approval.visible = open > .2;
-      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .15, reader.root.position.z]); face(companion, t, 'happy');
+      companion.lookAtPoint([reader.root.position.x, reader.root.position.y + .15, reader.root.position.z]); face(companion, t);
       receiptPhase = t < 1.7 ? 'approach-reader' : t < 2.05 ? 'card-contact' : t < 4 ? 'lock-open-after-contact' : 'withdraw-card';
     }); stillTime = 2.7;
   } else {
@@ -353,7 +353,7 @@ export function mountCeramicScene(host: HTMLDivElement, kind: SceneKind, onReady
       if (t < 2.6) { slip.position.copy(feedBase); slip.position.y -= .29 * .9 * (1 - feed); slip.rotation.y = 0; }
       else placeHeld(slip, companion, 0, grip, companion.root.rotation.y);
       kept.visible = t < 3.5 || t >= 6.8;
-      companion.lookAtPoint(t < 3.5 ? [feedBase.x, feedBase.y + .25, feedBase.z] : [storedAt.x, .65, storedAt.z]); face(companion, t, 'happy');
+      companion.lookAtPoint(t < 3.5 ? [feedBase.x, feedBase.y + .25, feedBase.z] : [storedAt.x, .65, storedAt.z]); face(companion, t);
       paperOwner = t < 2.6 ? 'printer' : t < 6.8 ? 'agent' : 'bag'; receiptPhase = t < 2.6 ? 'print-outward' : t < 5.3 ? 'grasp-and-turn' : t < 6.8 ? 'place-in-bag' : 'stored-in-bag';
     }); stillTime = 3;
   }
