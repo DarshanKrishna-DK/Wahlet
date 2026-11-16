@@ -1,0 +1,22 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { stateDir } from '../core/config.js';
+import { Vault } from '../core/vault.js';
+import { SettlementService } from './service.js';
+import { facilitatorServer } from './server.js';
+import { preparePrivateDirectory } from '../core/storage.js';
+
+if (!process.env.WAHLET_STATE_DIR || existsSync(join(stateDir, 'agent.vault.json')) || existsSync(join(stateDir, 'merchant.vault.json'))) throw new Error('Use a dedicated WAHLET_STATE_DIR for the standalone facilitator, separate from wallet and merchant state');
+preparePrivateDirectory(stateDir);
+const recipients = (process.env.WAHLET_FACILITATOR_MERCHANTS ?? '').split(',').filter(Boolean);
+if (!recipients.length || recipients.length > 50) throw new Error('Register between one and fifty merchant recipient addresses');
+const token = process.env.WAHLET_FACILITATOR_API_KEY ?? '';
+const vault = new Vault('facilitator');
+const password = process.env.WAHLET_FACILITATOR_PASSWORD; delete process.env.WAHLET_FACILITATOR_PASSWORD;
+if (password && !vault.unlocked) vault.unlock(password);
+if (!vault.unlocked) throw new Error('Configure a dedicated facilitator gas signer before starting');
+const provider = new SettlementService(vault, () => recipients);
+const server = facilitatorServer(provider, token, () => vault.address);
+server.listen(4022, '127.0.0.1', () => process.stderr.write('Wahlet facilitator: http://127.0.0.1:4022 (HTTPS reverse proxy required for remote merchants)\n'));
+server.on('error', () => { vault.lock(); process.stderr.write('Facilitator port is unavailable\n'); process.exit(1); });
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { vault.lock(); server.close(); process.exit(0); });

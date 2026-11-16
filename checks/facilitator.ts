@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import type { PaymentPayload, PaymentRequirements } from '@x402/core/types';
+import { SettlementService, validatePayment } from '../src/facilitator/service.js';
+import { facilitatorServer } from '../src/facilitator/server.js';
+import { USDT } from '../src/core/config.js';
+import { Vault } from '../src/core/vault.js';
+import { message } from '../src/core/errors.js';
+
+const payer = '0x1111111111111111111111111111111111111111', merchant = '0x2222222222222222222222222222222222222222';
+const requirements: PaymentRequirements = { scheme: 'exact', network: 'eip155:1874', asset: USDT, amount: '1000', payTo: merchant, maxTimeoutSeconds: 120, extra: { assetTransferMethod: 'permit2' } };
+const payload = { x402Version: 2, accepted: requirements, resource: { url: 'https://api.example/resource' }, payload: { signature: '0x' + 'ab'.repeat(65), permit2Authorization: { from: payer, nonce: '42' } } } as unknown as PaymentPayload;
+const directory = mkdtempSync(join(tmpdir(), 'wahlet-facilitator-'));
+const service = new SettlementService(new Vault(), () => [merchant], directory);
+const { id } = validatePayment(payload, requirements, [merchant]);
+assert.throws(() => validatePayment(payload, { ...requirements, network: 'eip155:1875' }, [merchant]));
+assert.throws(() => validatePayment(payload, requirements, [payer]));
+assert.throws(() => validatePayment(payload, { ...requirements, amount: '1001' }, [merchant]));
+assert.throws(() => validatePayment({ ...payload, extensions: { sponsoredApproval: {} } }, requirements, [merchant]), /extensions/);
+const proof = { success: true, network: 'eip155:1874', transaction: '0x' + '12'.repeat(32), payer };
+service.db.prepare('INSERT INTO settlements(id,binding,proof) VALUES(?,?,?)').run(id, JSON.stringify({ payload, requirements }), JSON.stringify(proof));
+const replayed = await Promise.all(Array.from({ length: 8 }, () => service.settle(payload, requirements)));
+assert.ok(replayed.every(result => result.transaction === proof.transaction));
+assert.equal((service.db.prepare('SELECT COUNT(*) AS count FROM settlements').get() as { count: number }).count, 1);
+const modified = structuredClone(payload); modified.resource = { url: 'https://api.example/other' };
+await assert.rejects(service.settle(modified, requirements), /different payment/);
+let settlements = 0;
+const server = facilitatorServer({ verify: async () => ({ isValid: false, invalidReason: 'invalid_signature' }), settle: async () => { settlements++; return proof as Awaited<ReturnType<SettlementService['settle']>>; } }, 'test-credential-'.repeat(3), () => merchant);
+await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+const address = server.address(); assert.ok(address && typeof address !== 'string');
+const base = `http://127.0.0.1:${address.port}`;
+try {
+  const supported = await (await fetch(base + '/supported')).json() as { kinds: { network: string }[] };
+  assert.deepEqual(supported.kinds.map(kind => kind.network), ['eip155:1874']);
+  assert.equal((await fetch(base + '/settle', { method: 'POST', body: '{}' })).status, 401);
+  for (let i = 0; i < 125; i++) assert.equal((await fetch(base + '/settle', { method: 'POST', body: '{}' })).status, 401);
+  assert.equal(settlements, 0);
+  assert.equal((await fetch(base + '/settle', { method: 'POST', headers: { authorization: 'Bearer ' + 'test-credential-'.repeat(3), origin: 'https://evil.example' }, body: '{}' })).status, 403);
+  assert.equal((await fetch(base + '/verify', { method: 'POST', headers: { authorization: 'Bearer ' + 'test-credential-'.repeat(3) }, body: JSON.stringify({ paymentPayload: payload, paymentRequirements: requirements }) })).status, 200);
+} finally { await new Promise<void>(resolve => server.close(() => resolve())); service.db.close(); }
+const secret = '0x' + 'ef'.repeat(65);
+const redacted = message(new Error(`RPC failed https://user:secret@rpc.example/?api_key=secret body ${secret} Bearer secret`));
+assert.ok(!redacted.includes('secret') && !redacted.includes(secret));
+console.log('Facilitator: authenticated HTTP, network/recipient binding, concurrent cached replay, altered resource rejection, and error redaction passed.');
