@@ -5,6 +5,7 @@ import { atomic, display } from './amounts.js';
 import { Ledger, type Operation } from './ledger.js';
 import { Vault } from './vault.js';
 import { createHash } from 'node:crypto';
+import { message } from './errors.js';
 
 export const publicClient = createPublicClient({ chain, transport: http(rpcUrl, { timeout: 15000, retryCount: 2 }) }).extend(publicActionsL2());
 export const fingerprint = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -50,10 +51,10 @@ export class Wallet {
       if (amount > 0n && this.ledger.policy().paused) throw new Error('Resume payments before increasing the allowance');
       const op = this.ledger.reserve({ id, asset: 'WBT', amount: 0n, recipient: PERMIT2, kind: 'approval', fingerprint: fingerprint({ approval: amount.toString() }) });
       if (op.state !== 'reserved') return this.result(op);
-      try { return await this.submit(op, USDT, 0n, encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [PERMIT2, amount] })); } catch (error) { if (this.ledger.get(id)?.state === 'reserved') this.ledger.update(id, 'failed', { error: message(error) }); throw error; }
+      try { return await this.submit(op, USDT, 0n, encodeFunctionData({ abi: erc20Abi, functionName: 'approve', args: [PERMIT2, amount] }), amount === 0n, amount); } catch (error) { if (this.ledger.get(id)?.state === 'reserved') this.ledger.update(id, 'failed', { error: message(error) }); throw error; }
     });
   }
-  private async submit(op: Operation, to: Address, value: bigint, data?: Hex) {
+  private async submit(op: Operation, to: Address, value: bigint, data?: Hex, allowPausedRevocation = false, allowance?: bigint) {
     const account = this.vault.account();
     const client = createWalletClient({ account, chain, transport: http(rpcUrl) });
     if (this.ledger.pending().some(item => item.id !== op.id && item.state === 'submitted')) throw new Error('A submitted transaction is still unresolved. Refresh its receipt before sending another payment');
@@ -64,6 +65,8 @@ export class Wallet {
     if (totalFee > atomic(process.env.WAHLET_MAX_GAS_WBT ?? '0.005', 'WBT')) throw new Error('Estimated fee exceeds the configured gas ceiling');
     const balance = await publicClient.getBalance({ address: account.address });
     if (balance < value + totalFee + atomic(process.env.WAHLET_GAS_RESERVE_WBT ?? '0.005', 'WBT')) throw new Error('Insufficient WBT after keeping the configured gas reserve');
+    this.ledger.assertSigningAllowed(op, allowPausedRevocation);
+    if (allowance !== undefined && allowance > atomic(this.ledger.policy().USDT.perDay, 'USDT')) throw new Error('Allowance exceeds the current daily USDT limit');
     const raw = await client.signTransaction(request), hash = keccak256(raw);
     this.ledger.update(op.id, 'submitted', { raw, hash, detail: JSON.stringify({ estimatedFeeWBT: display(totalFee, 'WBT'), from: account.address }) });
     await publicClient.sendRawTransaction({ serializedTransaction: raw });
@@ -89,4 +92,4 @@ export class Wallet {
   }
   result(op: Operation) { const { raw, fingerprint: ignored, ...safe } = op; return { ...safe, amount: display(op.amount, op.asset), detail: JSON.parse(op.detail), explorer: op.hash ? explorer(op.hash) : null }; }
 }
-export function message(error: unknown) { return error instanceof Error ? error.message.slice(0, 450) : 'The operation failed'; }
+export { message } from './errors.js';

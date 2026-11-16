@@ -1,8 +1,8 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
+import type { DatabaseSync } from 'node:sqlite';
 import { join } from 'node:path';
 import { atomic, display } from './amounts.js';
 import { stateDir, type Asset } from './config.js';
+import { openPrivateDatabase } from './storage.js';
 
 export type OperationState = 'reserved' | 'authorized' | 'submitted' | 'confirmed' | 'delivered' | 'failed' | 'expired';
 export type Operation = { id: string; fingerprint: string; asset: Asset; amount: string; recipient: string; kind: string; state: OperationState; created: string; settled: string | null; hash: string | null; raw: string | null; expires: number | null; detail: string; error: string | null };
@@ -11,8 +11,7 @@ export type Policy = { WBT: { perCall: string; perDay: string }; USDT: { perCall
 export class Ledger {
   readonly db: DatabaseSync;
   constructor(directory = stateDir) {
-    mkdirSync(directory, { recursive: true });
-    this.db = new DatabaseSync(join(directory, 'wahlet.sqlite'));
+    this.db = openPrivateDatabase(join(directory, 'wahlet.sqlite'));
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
       CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, asset TEXT NOT NULL, amount TEXT NOT NULL, recipient TEXT NOT NULL, kind TEXT NOT NULL, state TEXT NOT NULL, created TEXT NOT NULL, settled TEXT, hash TEXT, raw TEXT, expires INTEGER, detail TEXT NOT NULL DEFAULT '{}', error TEXT);
@@ -50,6 +49,17 @@ export class Ledger {
       this.db.exec('COMMIT');
       return this.get(input.id)!;
     } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+  }
+  assertSigningAllowed(operation: Operation, allowPausedRevocation = false) {
+    const current = this.get(operation.id);
+    if (!current || current.state !== 'reserved' || current.fingerprint !== operation.fingerprint) throw new Error('Operation is no longer awaiting a signature');
+    const policy = this.policy();
+    const revocation = allowPausedRevocation && current.kind === 'approval' && current.amount === '0';
+    if (policy.paused && !revocation) throw new Error('Payments are paused by the owner');
+    if (current.kind === 'approval' && current.amount === '0') return;
+    if (BigInt(current.amount) > atomic(policy[current.asset].perCall, current.asset)) throw new Error('Payment exceeds the current per-payment limit');
+    const usage = this.usage(current.asset);
+    if (usage.settled + usage.committed > atomic(policy[current.asset].perDay, current.asset)) throw new Error('Payment exceeds current daily capacity');
   }
   update(id: string, state: OperationState, fields: Partial<Pick<Operation, 'hash' | 'raw' | 'expires' | 'detail' | 'error'>> = {}) {
     const op = this.get(id); if (!op) throw new Error('Unknown operation');

@@ -10,6 +10,7 @@ import { Payments } from '../core/payments.js';
 import { Vault } from '../core/vault.js';
 import { stateDir, projectRoot, port, chain, USDT } from '../core/config.js';
 import { startMerchant } from '../merchant/server.js';
+import { failure } from '../core/errors.js';
 
 mkdirSync(stateDir, { recursive: true });
 const canonicalState = realpathSync(stateDir);
@@ -21,7 +22,7 @@ const ownerToken = randomBytes(32).toString('hex'), agentToken = randomBytes(32)
 writeFileSync(join(stateDir, 'connection.json'), JSON.stringify({ url: `http://127.0.0.1:${port}`, token: agentToken }), { mode: 0o600 });
 writeFileSync(join(stateDir, 'owner-link.json'), JSON.stringify({ url: `http://127.0.0.1:${port}/console#owner=${ownerToken}` }), { mode: 0o600 });
 const validOrigin = (value: string) => [`http://127.0.0.1:${port}`, `http://localhost:${port}`, 'http://127.0.0.1:5173'].includes(value);
-const equal = (value: string, expected: string) => value.length === expected.length && timingSafeEqual(Buffer.from(value), Buffer.from(expected));
+const equal = (value: string, expected: string) => Buffer.byteLength(value) === Buffer.byteLength(expected) && timingSafeEqual(Buffer.from(value), Buffer.from(expected));
 const operationId = z.string().uuid();
 const amount = z.string().max(60);
 const policySchema = z.object({ WBT: z.object({ perCall: amount, perDay: amount }), USDT: z.object({ perCall: amount, perDay: amount }), allowedOrigins: z.array(z.string().max(2048)).max(50), paused: z.boolean() });
@@ -44,6 +45,8 @@ async function command(name: string, args: unknown, owner: boolean) {
     case 'transfer': return wallet.transfer(transferSchema.parse(args));
     case 'balance': return wallet.balances();
     case 'spending_report': return ledger.report();
+    case 'receipt': { const { id } = z.object({ id: operationId }).parse(args); const operation = ledger.get(id); if (!operation) throw new Error('Unknown operation'); return wallet.result(operation); }
+    case 'activation': return { milestones: { walletCreated: wallet.vault.configured, policyConfigured: !!ledger.db.prepare("SELECT key FROM settings WHERE key='policy'").get(), firstVerifiedPayment: !!ledger.db.prepare("SELECT id FROM operations WHERE state IN ('confirmed','delivered') LIMIT 1").get(), firstResourceDelivered: !!ledger.db.prepare("SELECT id FROM operations WHERE state='delivered' LIMIT 1").get() }, collection: 'local-only', transmitted: false };
     case 'funding': return { chainId: 1874, agentAddress: wallet.vault.address, merchantAddress: merchantVault.address, faucet: 'https://faucet.testnet.whitechain.io', token: USDT, instructions: 'Claim test WBT, then check the faucet for official test USDT. Both identities need WBT; the agent also needs USDT. Tokens have no monetary value.' };
     case 'pay': { const input = z.object({ id: operationId, resource: z.string().url().max(2048), challenge: z.unknown() }).parse(args); return payments.authorize(input.id, input.challenge as Parameters<typeof payments.authorize>[1], input.resource); }
     case 'x402_fetch': { const input = z.object({ id: operationId, url: z.string().url().max(2048) }).parse(args); return payments.fetch(input.id, input.url); }
@@ -59,6 +62,7 @@ const server = createServer(async (req, res) => {
     if (![ `127.0.0.1:${port}`, `localhost:${port}` ].includes(req.headers.host ?? '')) throw new Error('Invalid host');
     if (req.headers.origin && !validOrigin(req.headers.origin)) throw new Error('Untrusted origin');
     const url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
+    if (url.pathname === '/health' && req.method === 'GET') { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ product: 'Wahlet', version: '0.2.0', chainId: chain.id, mainnet: false, scope: 'developer-preview' })); return; }
     if (url.pathname.startsWith('/api/')) {
       res.setHeader('Content-Type', 'application/json');
       const bearer = req.headers.authorization?.replace(/^Bearer /, '') ?? '';
@@ -78,7 +82,7 @@ const server = createServer(async (req, res) => {
     if (!existsSync(file)) { res.setHeader('Content-Type', 'text/plain'); res.writeHead(503).end('Build the website with npm run build, then open this page again.'); return; }
     res.setHeader('Content-Type', ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' } as Record<string, string>)[extname(file)] ?? 'application/octet-stream');
     res.end(req.method === 'HEAD' ? undefined : readFileSync(file));
-  } catch (error) { if (!res.headersSent) { res.setHeader('Content-Type', 'application/json'); res.writeHead(400); } res.end(JSON.stringify({ error: error instanceof z.ZodError ? 'Invalid command arguments' : message(error) })); }
+  } catch (error) { if (!res.headersSent) { res.setHeader('Content-Type', 'application/json'); res.writeHead(400); } const detail = failure(error); res.end(JSON.stringify({ error: error instanceof z.ZodError ? 'Invalid command arguments' : detail.message, code: detail.code, retry: detail.retry })); }
 });
 server.requestTimeout = 90000;
 server.headersTimeout = 15000;

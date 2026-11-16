@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { stateDir } from '../core/config.js';
+import { message } from '../core/errors.js';
 
 export async function callDaemon(command: string, args: unknown = {}) {
   let connection: { url: string; token: string };
@@ -9,6 +10,6 @@ export async function callDaemon(command: string, args: unknown = {}) {
   if (url.hostname !== '127.0.0.1' || url.protocol !== 'http:') throw new Error('Invalid local daemon connection');
   const response = await fetch(`${url.origin}/api/command`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${connection.token}` }, body: JSON.stringify({ command, args }), signal: AbortSignal.timeout(90000) });
   const result = await response.json() as { result?: unknown; error?: string };
-  if (!response.ok || result.error) throw new Error(result.error ?? 'Local daemon failed');
+  if (!response.ok || result.error) throw new Error(message(new Error(result.error ?? 'Local daemon failed')));
   return result.result;
 }

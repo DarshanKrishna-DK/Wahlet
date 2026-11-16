@@ -4,15 +4,19 @@ import { join } from 'node:path';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { stateDir } from './config.js';
 import type { Hex } from 'viem';
+import { preparePrivateDirectory, protectPrivateFile } from './storage.js';
 
 export class Vault {
   private key: Hex | undefined;
   private readonly file: string;
   private readonly identityFile: string;
-  constructor(role: 'agent' | 'merchant' = 'agent') {
+  constructor(role: 'agent' | 'merchant' | 'facilitator' = 'agent') {
+    preparePrivateDirectory(stateDir);
     this.file = join(stateDir, `${role}.vault.json`);
     this.identityFile = join(stateDir, `${role}.identity.json`);
-    const variable = role === 'agent' ? 'WAHLET_PRIVATE_KEY' : 'WAHLET_MERCHANT_PRIVATE_KEY';
+    protectPrivateFile(this.file);
+    protectPrivateFile(this.identityFile);
+    const variable = role === 'agent' ? 'WAHLET_PRIVATE_KEY' : role === 'merchant' ? 'WAHLET_MERCHANT_PRIVATE_KEY' : 'WAHLET_FACILITATOR_PRIVATE_KEY';
     if (process.env[variable]) {
       const value = process.env[variable] as Hex;
       const address = privateKeyToAccount(value).address;

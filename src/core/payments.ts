@@ -29,9 +29,9 @@ export class Payments {
       const [allowance, balance] = await Promise.all([publicClient.readContract({ address: USDT, abi: erc20Abi, functionName: 'allowance', args: [account.address, PERMIT2] }), publicClient.readContract({ address: USDT, abi: erc20Abi, functionName: 'balanceOf', args: [account.address] })]);
       if (allowance < amount) throw new Error('Approve a bounded USDT allowance in the local console before paying for an API');
       if (balance < amount) throw new Error('Insufficient agent USDT balance');
+      const authorizationBlock = await publicClient.getBlock();
       const operation = this.wallet.ledger.reserve({ id, fingerprint: fingerprint({ resource, offer }), asset: 'USDT', amount, recipient, kind: 'x402' });
       if (operation.state !== 'reserved') throw new Error('This operation already ended. Create a new operation ID to authorize another payment');
-      const authorizationBlock = await publicClient.getBlock();
       const authorizedBlock = authorizationBlock.number.toString();
       try {
         // The ledger has approved and reserved this exact amount under owner policy.
@@ -39,6 +39,8 @@ export class Payments {
           .register('eip155:1874', new ExactEvmScheme(account, { rpcUrl }))
           .setSpendControls({ allowedAssets: [{ network: 'eip155:1874', asset: USDT, maxAmountPerPayment: amount.toString() }] });
         const httpClient = new x402HTTPClient(client);
+        validateUrl(resource, this.wallet.ledger.policy().allowedOrigins);
+        this.wallet.ledger.assertSigningAllowed(operation);
         const payload = await httpClient.createPaymentPayload({ x402Version: 2, resource: challenge.resource, accepts: [offer] });
         const header = httpClient.encodePaymentSignatureHeader(payload);
         const permit = (payload.payload as { permit2Authorization?: { deadline: string; nonce: string; spender: string } }).permit2Authorization;

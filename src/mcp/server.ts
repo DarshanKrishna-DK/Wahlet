@@ -2,9 +2,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { callDaemon } from '../local/client.js';
+import { failure } from '../core/errors.js';
 
 export function createMcpServer() {
-  const server = new McpServer({ name: 'wahlet', version: '0.1.0' });
+  const server = new McpServer({ name: 'wahlet', version: '0.2.0' });
   const run = async (command: string, args: unknown = {}) => {
     const operation_id = (args as { id?: string }).id;
     try {
@@ -12,7 +13,8 @@ export function createMcpServer() {
       const structuredContent = { ...(operation_id ? { operation_id } : {}), result };
       return { structuredContent, content: [{ type: 'text' as const, text: JSON.stringify(structuredContent, null, 2) }] };
     } catch (error) {
-      const structuredContent = { ...(operation_id ? { operation_id } : {}), error: error instanceof Error ? error.message : 'Operation failed', ...(operation_id ? { retry: 'Inspect spending_report and reuse this operation_id. Do not create another payment to resolve an uncertain outcome.' } : {}) };
+      const detail = failure(error);
+      const structuredContent = { ...(operation_id ? { operation_id } : {}), error: detail.message, code: detail.code, retry: detail.retry };
       return { isError: true, structuredContent, content: [{ type: 'text' as const, text: JSON.stringify(structuredContent) }] };
     }
   };
