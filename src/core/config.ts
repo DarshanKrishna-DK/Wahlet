@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import { defineChain, getAddress } from 'viem';
 import { chainConfig } from 'viem/op-stack';
 import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 
 export const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
 config({ path: resolve(projectRoot, '.env'), quiet: true });
@@ -11,7 +13,8 @@ export const chain = defineChain({ ...chainConfig, blockTime: 1000, sourceId: 11
 export const USDT = getAddress('0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7');
 export const PERMIT2 = getAddress('0x000000000022D473030F116dDEE9F6B43aC78BA3');
 export const EXACT_PROXY = getAddress('0x402085c248EeA27D92E8b30b2C58ed07f9E20001');
-export const stateDir = resolve(process.env.WAHLET_STATE_DIR ?? resolve(projectRoot, '.local'));
+const userData = process.platform === 'win32' ? process.env.LOCALAPPDATA ?? resolve(homedir(), 'AppData/Local') : process.platform === 'darwin' ? resolve(homedir(), 'Library/Application Support') : process.env.XDG_DATA_HOME ?? resolve(homedir(), '.local/share');
+export const stateDir = resolve(process.env.WAHLET_STATE_DIR ?? (existsSync(resolve(projectRoot, 'src')) ? resolve(projectRoot, '.local') : resolve(userData, 'Wahlet')));
 export const port = Number(process.env.WAHLET_PORT ?? 4100);
 export const rpcUrl = process.env.WAHLET_RPC_URL ?? chain.rpcUrls.default.http[0];
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid WAHLET_PORT');

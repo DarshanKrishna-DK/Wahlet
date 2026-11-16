@@ -1,30 +1,28 @@
 import { useState } from 'react';
 import { CopyCode } from '../App';
 
-export default function ClientSetup(){
-  const [client,setClient]=useState('claude-desktop');
-  const [directory,setDirectory]=useState('C:/path/to/Wahlet');
-  const folder=directory.trim().replaceAll('\\','/').replace(/\/$/,'');
-  const validPath=/^(?:[A-Za-z]:\/|\/)/.test(folder)&&!/[\r\n\0]/.test(folder)&&!folder.includes('/path/to/');
-  const entry=folder+'/dist/mcp/index.js';
-  const server={command:'node',args:[entry]};
-  const config=JSON.stringify({mcpServers:{wahlet:server}},null,2);
-  const codexConfig=`[mcp_servers.wahlet]\ncommand = "node"\nargs = [${JSON.stringify(entry)}]`;
-  const encoded=btoa(Array.from(new TextEncoder().encode(JSON.stringify(server)),byte=>String.fromCharCode(byte)).join(''));
-  const installLink=`cursor://anysphere.cursor-deeplink/mcp/install?name=wahlet&config=${encodeURIComponent(encoded)}`;
-  const quotedEntry="'"+entry.replaceAll("'","''")+"'";
-  return <div className="install-surface">
-    <label>Your AI assistant<select value={client} onChange={event=>setClient(event.target.value)}><option value="claude-desktop">Claude Desktop</option><option value="claude-code">Claude Code</option><option value="codex">Codex</option><option value="chatgpt">ChatGPT</option><option value="cursor">Cursor</option><option value="other">Another local MCP client</option></select></label>
-    <p>Start the Wahlet wallet service on your computer before connecting. Keep it running while your assistant uses the wallet. Configure and unlock the dedicated signer locally. Never paste a private key or vault password into chat.</p>
-    <label>Wahlet installation folder<input value={directory} onChange={event=>setDirectory(event.target.value)} spellCheck={false} aria-invalid={!validPath} aria-describedby="installation-path-help"/></label>
-    <p id="installation-path-help" className="field-help">Enter the absolute folder containing your built Wahlet installation. Replace the example path before copying configuration.</p>
-    {client==='cursor'&&(validPath?<a className="button primary" href={installLink}>Add Wahlet to Cursor</a>:<p role="status">Enter your installation folder to enable direct installation.</p>)}
-    {validPath&&(client==='chatgpt'?<><h2>Connect through a private tunnel.</h2><p>ChatGPT needs a supported MCP connection. A local file path alone does not connect the web app. Secure MCP Tunnel can connect the local stdio server when your account and workspace permit custom MCP servers.</p><p>Follow the official setup guide with the command <code>node</code> and the server entry below. Associate the tunnel with your ChatGPT workspace, then add it through Plugins. Expose only the agent MCP server, never the wallet owner console.</p><CopyCode text={entry}/><a className="text-link" href="https://developers.openai.com/api/docs/guides/secure-mcp-tunnels" target="_blank" rel="noreferrer">Open the Secure MCP Tunnel guide</a><p className="small">This connection requires separate setup. Choosing ChatGPT here does not install or connect a tunnel.</p></>:<>
-      {client==='claude-desktop'&&<p>In Claude Desktop, open Settings, Developer, Edit Config. Merge this entry into <code>claude_desktop_config.json</code>, preserve other servers, then fully quit and restart Claude.</p>}
-      {client==='cursor'&&<p>Merge this entry into your project <code>.cursor/mcp.json</code>, then enable Wahlet in Cursor MCP settings.</p>}
-      {client==='other'&&<p>Add a local stdio server named Wahlet. Use command <code>node</code> with the absolute entry path below as its only argument.</p>}
-      {(client==='claude-code'||client==='codex')?<><p>Run this command in PowerShell, then reopen your assistant and review the Wahlet tools.</p><CopyCode text={client==='codex'?`codex mcp add wahlet -- node ${quotedEntry}`:`claude mcp add --transport stdio wahlet -- node ${quotedEntry}`}/>{client==='codex'?<><p>Alternatively, merge this TOML section into <code>~/.codex/config.toml</code>. On Windows, that file is in your user profile under <code>.codex</code>. Preserve other settings and update an existing Wahlet section instead of adding it twice.</p><CopyCode text={codexConfig}/><p>Run <code>codex mcp list</code> to confirm registration, then verify the wallet through the chat prompt below.</p></>:<><p>Alternatively, merge this JSON into your project <code>.mcp.json</code>, preserving other servers, and approve the project server when Claude Code asks.</p><CopyCode text={config}/></>}</>:<CopyCode text={config}/>}</>)}
-    <h2>Try it in your own chat.</h2><p>Confirm that Wahlet appears in the assistant tool list, then paste:</p><CopyCode text="Use Wahlet to check my wallet address, network, WBT and USDT balances, and spending report. Do not send a payment."/>
-    <p>A connection is ready when your assistant returns real tool results. A copied configuration alone does not verify it.</p>
+const clients = [
+  ['claude-desktop', 'Claude Desktop'], ['claude-code', 'Claude Code'],
+  ['codex', 'Codex'], ['chatgpt', 'ChatGPT'], ['cursor', 'Cursor'], ['other', 'Another local MCP client'],
+] as const;
+
+export default function ClientSetup() {
+  const [client, setClient] = useState('claude-desktop');
+  const configurationClient = client.startsWith('claude') ? 'claude' : client;
+  return <div className="install-surface client-setup">
+    <h2>Connect your assistant.</h2>
+    <label>Your AI assistant<select value={client} onChange={event => setClient(event.target.value)}>{clients.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+    <p>Keep <code>wahlet serve</code> running. Generate configuration from the installed app so it uses your Node.js path and local wallet state.</p>
+    <CopyCode text={`wahlet config ${configurationClient}`}/>
+    {client === 'claude-desktop' && <p>Open Claude Desktop Settings, Developer, Edit Config. Merge the generated <code>mcpServers.wahlet</code> entry into <code>claude_desktop_config.json</code>, preserve other servers, then fully quit and restart Claude.</p>}
+    {client === 'claude-code' && <p>Merge the generated JSON into your project <code>.mcp.json</code>, preserve other servers, then reopen Claude Code and approve the Wahlet project server.</p>}
+    {client === 'codex' && <><p>Merge the generated TOML into <code>~/.codex/config.toml</code>. Replace an existing Wahlet section instead of adding it twice. Restart Codex, then check registration:</p><CopyCode text="codex mcp list"/></>}
+    {client === 'cursor' && <p>Merge the generated JSON into your project <code>.cursor/mcp.json</code>, preserve other servers, then enable Wahlet in Cursor MCP settings. The generated configuration contains the installed executable paths.</p>}
+    {client === 'other' && <p>Add the generated Wahlet entry as a local stdio MCP server. Preserve its command, arguments, and state directory. The generated configuration contains local paths, never signing keys.</p>}
+    {client === 'chatgpt' && <><h3>Use a private MCP connection.</h3><p>ChatGPT requires access to custom MCP connections and a separately configured Secure MCP Tunnel. Use the command, arguments, and state directory printed above for the local stdio process. Associate the tunnel with your ChatGPT workspace. Expose only the agent MCP process, never the owner console.</p><a className="text-link" href="https://developers.openai.com/api/docs/guides/secure-mcp-tunnels" target="_blank" rel="noreferrer">Open the Secure MCP Tunnel guide</a><p className="small">Selecting ChatGPT does not install or connect a tunnel. Availability depends on your account and workspace.</p></>}
+    <h3>Start with a read.</h3>
+    <p>Confirm that Wahlet appears in your assistant tool list, then paste:</p>
+    <CopyCode text="Use Wahlet to check my wallet address, network, WBT and USDT balances, and spending report. Do not send a payment."/>
+    <p className="small">A connection is ready when the assistant returns real tool results. Never paste a private key, vault password, or owner console link into chat.</p>
   </div>;
 }

@@ -53,7 +53,9 @@ Write tools accept `operation_id`. Reuse it for the same payment after interrupt
 
 ## Quick start
 
-Requires Node.js 24 or newer and npm. In the project directory:
+Requires Node.js 24 or newer and npm. Install a checksummed release using the [release guide](RELEASE.md), then run `wahlet doctor`, `wahlet serve`, and `wahlet console` in a second terminal. Release archives contain the built console and MCP service. State is stored outside the installed package so upgrades preserve the wallet.
+
+For development from a source checkout, run these commands in the project directory:
 
 ```powershell
 npm.cmd ci
@@ -76,6 +78,8 @@ The local HTTP example requires `WAHLET_DEMO_LOCAL=true` as provided in `.env.ex
 ### Connect an MCP client
 
 Build first, then add this server to your client configuration. Replace the absolute path for your installation:
+
+For an installed release, run `wahlet config claude`, `wahlet config cursor`, or `wahlet config codex` to generate configuration with the correct executable and state paths. Merge the output with existing client settings. ChatGPT uses `wahlet config chatgpt` for the separate private tunnel instructions.
 
 ```json
 {
@@ -164,12 +168,14 @@ docs/              Private planning and verification, kept locally
 | `npm run merchant` | Start the integrated daemon and paid API from source. |
 | `npm run typecheck` | Check server and frontend types. |
 | `npm run check:invariants` | Run focused offline payment checks. |
+| `npm run doctor` | Inspect installation and read-only network readiness. |
+| `npm run release:pack` | Build an allowlisted release archive with checksum and manifest. |
 
 ## Documentation
 
 The product handbook is available at /docs in the running website. Private PRD, design, planning, manual setup, verification, and launch-gate records remain in the local docs folder and are excluded from this repository.
 
-The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a verified direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Public package publishing and managed endpoint deployment remain future distribution gates. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
+The website provides local configuration for Claude Desktop, Claude Code, Codex, Cursor, and other stdio clients, plus a direct Cursor installation link for a validated local path. ChatGPT setup follows the official Secure MCP Tunnel route and requires workspace access and separate tunnel configuration. Versioned release archives are built with explicit public-file allowlists and checksums. Registry publication and a managed endpoint remain separate distribution decisions. Mainnet launch requires a separately reviewed network configuration, deployment verification, operational security, and explicit owner authorization. Test tokens have no monetary value.
 
 Required notices for reused code and assets are retained under [licenses](licenses/upstream-MIT.txt).
 

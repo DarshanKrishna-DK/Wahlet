@@ -1,6 +1,6 @@
 {
     "name": "wahlet",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "private": true,
     "description": "A local-first MCP payment wallet for Whitechain",
     "type": "module",
@@ -8,8 +8,9 @@
         "node": ">=24"
     },
     "bin": {
-        "wahlet": "dist/mcp/index.js"
+        "wahlet": "dist/cli/index.js"
     },
+    "files": ["dist/**/*.js", "apps/web/dist/", "licenses/", "LICENSE", "RELEASE.md", "FACILITATOR.md", "README.md"],
     "scripts": {
         "build": "tsc && vite build",
         "typecheck": "tsc --noEmit && tsc -p apps/web/tsconfig.json",
@@ -19,8 +20,12 @@
         "mcp": "node dist/mcp/index.js",
         "merchant": "node --import tsx examples/paid-api/server.ts",
         "check:invariants": "node --import tsx checks/payment-invariants.ts && node --import tsx checks/recovery-regressions.ts",
+        "check:safety": "npm run check:invariants && node --import tsx checks/private-storage.ts && node --import tsx checks/signing-authority.ts && node --import tsx checks/facilitator.ts && node --import tsx checks/merchant-recovery.ts && node --import tsx checks/settlement-matching.ts && node --import tsx checks/browser-wallet-errors.ts",
         "console": "node scripts/open-console.mjs",
-        "build:web": "vite build"
+        "build:web": "vite build",
+        "doctor": "node dist/cli/index.js doctor",
+        "release:pack": "npm run build && node scripts/release.mjs",
+        "check:release": "node scripts/check-release.mjs"
     },
     "dependencies": {
         "@fontsource/geist": "5.3.0",

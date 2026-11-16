@@ -1,0 +1,24 @@
+name: Publish verifiable preview
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run check:safety
+      - run: npm run release:pack
+      - run: npm run check:release
+      - name: Publish reviewed preview assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" .local/releases/*.tgz .local/releases/SHA256SUMS .local/releases/*.manifest.json --verify-tag --prerelease --title "Wahlet $GITHUB_REF_NAME developer preview" --notes "Whitechain Sepolia only. Verifiable local wallet package, standalone Permit2 facilitator, client setup and recovery. Mainnet is disabled. External merchant interoperability remains a qualification gate."
