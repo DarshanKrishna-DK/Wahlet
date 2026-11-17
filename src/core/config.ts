@@ -11,6 +11,8 @@ config({ path: resolve(projectRoot, '.env'), quiet: true });
 
 export const chain = defineChain({ ...chainConfig, blockTime: 1000, sourceId: 11155111, id: 1874, name: 'Whitechain Sepolia', nativeCurrency: { name: 'WBT', symbol: 'WBT', decimals: 18 }, rpcUrls: { default: { http: ['https://rpc.testnet.whitechain.io'] } }, blockExplorers: { default: { name: 'Whitechain Explorer', url: 'https://explorer.testnet.whitechain.io' } } });
 export const USDT = getAddress('0xcedfB56113143d55b2358b8CFbB0dEB5Ad2f55a7');
+/** EIP-712 domain of official test USDT, checked against its on-chain DOMAIN_SEPARATOR before any EIP-3009 signature. */
+export const USDT_DOMAIN = { name: 'Tether USD', version: '1' } as const;
 export const PERMIT2 = getAddress('0x000000000022D473030F116dDEE9F6B43aC78BA3');
 export const EXACT_PROXY = getAddress('0x402085c248EeA27D92E8b30b2C58ed07f9E20001');
 const userData = process.platform === 'win32' ? process.env.LOCALAPPDATA ?? resolve(homedir(), 'AppData/Local') : process.platform === 'darwin' ? resolve(homedir(), 'Library/Application Support') : process.env.XDG_DATA_HOME ?? resolve(homedir(), '.local/share');

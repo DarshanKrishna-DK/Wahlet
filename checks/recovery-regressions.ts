@@ -24,11 +24,13 @@ try {
   {label:'wrong chain',offer:{...validOffer,network:'eip155:1'}},
   {label:'unsupported token',offer:{...validOffer,asset:'0x2222222222222222222222222222222222222222'}},
   {label:'unsupported scheme',offer:{...validOffer,scheme:'upto'}},
-  {label:'unsupported authorization',offer:{...validOffer,extra:{assetTransferMethod:'eip3009'}}},
+  {label:'unsupported authorization',offer:{...validOffer,extra:{assetTransferMethod:'eip2612'}}},
  ];
  for(const {label,offer} of invalidOffers){
-  await assert.rejects(payments.authorize(randomUUID(),{...challenge,accepts:[offer]} as never,challenge.resource.url),/Only official test USDT exact Permit2 payments/,label);
+  await assert.rejects(payments.authorize(randomUUID(),{...challenge,accepts:[offer]} as never,challenge.resource.url),/Only official test USDT exact Permit2 or EIP-3009 payments/,label);
  }
+ for(const extra of [undefined,{name:'Tether USD'},{name:'Fake USD',version:'1'},{name:'Tether USD',version:'2'}]) await assert.rejects(payments.authorize(randomUUID(),{...challenge,accepts:[{...validOffer,extra}]} as never,challenge.resource.url),/signing domain does not match/);
+ console.log('PASS EIP-3009 offers with a missing or forged signing domain rejected before signer access');
  for(const duration of [0,-1,301]) await assert.rejects(payments.authorize(randomUUID(),{...challenge,accepts:[{...validOffer,maxTimeoutSeconds:duration}]} as never,challenge.resource.url),/Invalid payment amount or authorization duration/);
  await assert.rejects(payments.authorize(randomUUID(),{...challenge,resource:{url:'https://example.com/another'},accepts:[validOffer]} as never,challenge.resource.url),/bound to this exact resource/);
  await assert.rejects(payments.authorize(randomUUID(),{...challenge,accepts:[validOffer,validOffer]} as never,challenge.resource.url),/Expected one x402 v2 payment offer/);
