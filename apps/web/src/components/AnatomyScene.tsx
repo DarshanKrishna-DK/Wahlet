@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import './ceramic-scenes.css';
 
 export type SceneKind = 'hero' | 'wallet' | 'policy' | 'receipt';
 const descriptions: Record<SceneKind, string> = {
@@ -8,6 +7,12 @@ const descriptions: Record<SceneKind, string> = {
   policy: 'A white and light-purple agent taps its card against an authorization reader. The lock opens after contact. Illustrative animation.',
   receipt: 'A printer feeds a receipt outward. A white and light-purple agent grasps the paper, turns, and places it inside a small bag. Illustrative animation.',
 };
+function whenIdle(): Promise<void> {
+  return new Promise((resolve) => {
+    const run = () => ('requestIdleCallback' in window ? window.requestIdleCallback(() => resolve(), { timeout: 2500 }) : setTimeout(resolve, 600));
+    if (document.readyState === 'complete') run(); else window.addEventListener('load', run, { once: true });
+  });
+}
 export default function AnatomyScene({ kind = 'hero' }: { kind?: SceneKind }) {
   const host = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -21,7 +26,7 @@ export default function AnatomyScene({ kind = 'hero' }: { kind?: SceneKind }) {
     const observer = new IntersectionObserver((entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       observer.disconnect();
-      void import('./ceramic-world').then(({ mountCeramicScene }) => {
+      void whenIdle().then(() => import('./ceramic-world')).then(({ mountCeramicScene }) => {
         if (disposed) return;
         cleanup = mountCeramicScene(element, kind, () => setReady(true), () => setReady(false));
       }).catch(() => { /* The rendered still remains available if WebGL cannot start. */ });

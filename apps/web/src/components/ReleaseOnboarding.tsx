@@ -1,6 +1,5 @@
 import { CopyCode } from '../App';
 import AnatomyScene from './AnatomyScene';
-import './release-onboarding.css';
 
 const release = 'https://github.com/DarshanKrishna-DK/Wahlet/releases/tag/v0.2.0';
 
