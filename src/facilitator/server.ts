@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { PaymentPayload, PaymentRequirements } from '@x402/core/types';
 import { USDT } from '../core/config.js';
 import { failure } from '../core/errors.js';
+import { readBody } from '../core/http.js';
 import type { FacilitatorProvider } from './service.js';
 
 export function facilitatorServer(provider: FacilitatorProvider, token: string, address: () => string | null) {
@@ -20,7 +21,7 @@ export function facilitatorServer(provider: FacilitatorProvider, token: string, 
       if (Date.now() - windowStart >= 60000) { requests = 0; windowStart = Date.now(); }
       if (++requests > 120) { res.setHeader('Retry-After', '60'); res.writeHead(429).end(JSON.stringify({ error: 'Rate limit exceeded' })); return; }
       if (req.method !== 'POST' || !['/verify', '/settle'].includes(req.url ?? '')) { res.writeHead(404).end(JSON.stringify({ error: 'Unknown facilitator route' })); return; }
-      let body = ''; for await (const chunk of req) { body += chunk.toString(); if (Buffer.byteLength(body) > 32000) throw new Error('Payment body exceeds the size limit'); }
+      const body = await readBody(req, 32000, 'Payment body exceeds the size limit');
       const input = z.object({ x402Version: z.literal(2).optional(), paymentPayload: z.object({}).passthrough(), paymentRequirements: z.object({}).passthrough() }).parse(JSON.parse(body));
       const payload = input.paymentPayload as unknown as PaymentPayload, requirements = input.paymentRequirements as unknown as PaymentRequirements;
       res.end(JSON.stringify(req.url === '/verify' ? await provider.verify(payload, requirements) : await provider.settle(payload, requirements)));

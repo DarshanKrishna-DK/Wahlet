@@ -11,6 +11,7 @@ import { Vault } from '../core/vault.js';
 import { stateDir, projectRoot, port, chain, USDT } from '../core/config.js';
 import { startMerchant } from '../merchant/server.js';
 import { failure } from '../core/errors.js';
+import { readBody } from '../core/http.js';
 
 mkdirSync(stateDir, { recursive: true });
 const canonicalState = realpathSync(stateDir);
@@ -70,7 +71,7 @@ const server = createServer(async (req, res) => {
       if (!owner && !equal(bearer, agentToken)) { res.writeHead(401).end(JSON.stringify({ error: 'Connect to the local daemon again' })); return; }
       if (url.pathname === '/api/state' && req.method === 'GET') { res.end(JSON.stringify(await state())); return; }
       if (url.pathname !== '/api/command' || req.method !== 'POST') { res.writeHead(404).end(JSON.stringify({ error: 'API route not found' })); return; }
-      let body = ''; for await (const chunk of req) { body += chunk.toString(); if (Buffer.byteLength(body) > 64000) throw new Error('Command body exceeds the size limit'); }
+      const body = await readBody(req, 64000, 'Command body exceeds the size limit');
       const input = z.object({ command: z.string(), args: z.unknown().optional() }).parse(JSON.parse(body));
       res.end(JSON.stringify({ result: await command(input.command, input.args ?? {}, owner) })); return;
     }

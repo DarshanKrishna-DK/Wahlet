@@ -65,6 +65,8 @@ export class Wallet {
     if (totalFee > atomic(process.env.WAHLET_MAX_GAS_WBT ?? '0.005', 'WBT')) throw new Error('Estimated fee exceeds the configured gas ceiling');
     const balance = await publicClient.getBalance({ address: account.address });
     if (balance < value + totalFee + atomic(process.env.WAHLET_GAS_RESERVE_WBT ?? '0.005', 'WBT')) throw new Error('Insufficient WBT after keeping the configured gas reserve');
+    // Recheck the RPC chain ID immediately before signing, then confirm the reservation and policy.
+    await this.network();
     this.ledger.assertSigningAllowed(op, allowPausedRevocation);
     if (allowance !== undefined && allowance > atomic(this.ledger.policy().USDT.perDay, 'USDT')) throw new Error('Allowance exceeds the current daily USDT limit');
     const raw = await client.signTransaction(request), hash = keccak256(raw);

@@ -31,8 +31,11 @@ export class Ledger {
   pending(): Operation[] { return this.db.prepare("SELECT * FROM operations WHERE state IN ('reserved','authorized','submitted')").all() as Operation[]; }
   usage(asset: Asset, now = new Date()): { settled: bigint; committed: bigint } {
     const day = now.toISOString().slice(0, 10);
-    const rows = this.db.prepare('SELECT amount,state,settled FROM operations WHERE asset=?').all(asset) as Pick<Operation, 'amount' | 'state' | 'settled'>[];
-    return rows.reduce((sum, row) => { if (['reserved', 'authorized', 'submitted'].includes(row.state)) sum.committed += BigInt(row.amount); else if (['confirmed', 'delivered'].includes(row.state) && row.settled?.startsWith(day)) sum.settled += BigInt(row.amount); return sum; }, { settled: 0n, committed: 0n });
+    // Only rows that count against capacity are read: outstanding commitments of any day plus settlements on this UTC day.
+    const rows = this.db.prepare("SELECT amount,state FROM operations WHERE asset=? AND (state IN ('reserved','authorized','submitted') OR (state IN ('confirmed','delivered') AND substr(settled,1,10)=?))").all(asset, day) as Pick<Operation, 'amount' | 'state'>[];
+    const total = { settled: 0n, committed: 0n };
+    for (const row of rows) total[['confirmed', 'delivered'].includes(row.state) ? 'settled' : 'committed'] += BigInt(row.amount);
+    return total;
   }
   reserve(input: { id: string; fingerprint: string; asset: Asset; amount: bigint; recipient: string; kind: string }): Operation {
     this.db.exec('BEGIN IMMEDIATE');
@@ -68,6 +71,13 @@ export class Ledger {
     this.db.prepare('UPDATE operations SET state=?,settled=?,hash=?,raw=?,expires=?,detail=?,error=? WHERE id=?').run(state, settled, fields.hash ?? op.hash, fields.raw ?? op.raw, fields.expires ?? op.expires, fields.detail ?? op.detail, fields.error ?? op.error, id);
   }
   report() {
-    return { policy: this.policy(), usage: Object.fromEntries((['WBT', 'USDT'] as const).map(asset => { const usage = this.usage(asset); const remaining = atomic(this.policy()[asset].perDay, asset) - usage.settled - usage.committed; return [asset, { settled: display(usage.settled, asset), committed: display(usage.committed, asset), remaining: display(remaining > 0n ? remaining : 0n, asset) }]; })), operations: this.all().map(({ raw, detail, ...op }) => ({ ...op, amount: display(op.amount, op.asset), detail: JSON.parse(detail) })) };
+    const policy = this.policy();
+    const usage = Object.fromEntries((['WBT', 'USDT'] as const).map(asset => {
+      const { settled, committed } = this.usage(asset);
+      const remaining = atomic(policy[asset].perDay, asset) - settled - committed;
+      return [asset, { settled: display(settled, asset), committed: display(committed, asset), remaining: display(remaining > 0n ? remaining : 0n, asset) }];
+    }));
+    const operations = this.all().map(({ raw, detail, ...op }) => ({ ...op, amount: display(op.amount, op.asset), detail: JSON.parse(detail) }));
+    return { policy, usage, operations };
   }
 }

@@ -1,6 +1,6 @@
 import { x402Client, x402HTTPClient } from '@x402/core/client';
 import { ExactEvmScheme } from '@x402/evm/exact/client';
-import type { PaymentRequired, PaymentRequirements, PaymentPayload } from '@x402/core/types';
+import type { PaymentRequired, PaymentPayload } from '@x402/core/types';
 import { erc20Abi, getAddress, parseEventLogs, type Address, type Hex } from 'viem';
 import { USDT, PERMIT2, EXACT_PROXY, rpcUrl, explorer } from './config.js';
 import { display } from './amounts.js';
@@ -40,6 +40,8 @@ export class Payments {
           .setSpendControls({ allowedAssets: [{ network: 'eip155:1874', asset: USDT, maxAmountPerPayment: amount.toString() }] });
         const httpClient = new x402HTTPClient(client);
         validateUrl(resource, this.wallet.ledger.policy().allowedOrigins);
+        // Recheck the RPC chain ID immediately before signing, then confirm the reservation and policy.
+        await this.wallet.network();
         this.wallet.ledger.assertSigningAllowed(operation);
         const payload = await httpClient.createPaymentPayload({ x402Version: 2, resource: challenge.resource, accepts: [offer] });
         const header = httpClient.encodePaymentSignatureHeader(payload);
