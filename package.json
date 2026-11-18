@@ -24,6 +24,7 @@
         "console": "node scripts/open-console.mjs",
         "build:web": "vite build",
         "doctor": "node dist/cli/index.js doctor",
+        "check:mcp": "node scripts/mcp-smoke.mjs",
         "release:pack": "npm run build && node scripts/release.mjs",
         "check:release": "node scripts/check-release.mjs"
     },

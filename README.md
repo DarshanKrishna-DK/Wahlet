@@ -7,14 +7,14 @@
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
 
-**Release status:** local-first testnet acceptance verified. Real transfers, paid API delivery, same-operation replay, restart and crash recovery, browser-wallet refusal flows, responsive layouts, and reduced motion have been exercised. ChatGPT completed a real purchase through the private MCP tunnel. Cursor connects with all seven tools. Mainnet is disabled; production launch requires the separate migration and security gates below.
+**Release status:** Whitechain Sepolia developer preview. Local-first testnet acceptance is verified, including a paid request to an independently operated x402 merchant settled by a separate facilitator. Real transfers, paid API delivery, same-operation replay, restart and crash recovery, browser-wallet refusal flows, responsive layouts, and reduced motion have been exercised. ChatGPT completed a real purchase through the private MCP tunnel. Cursor connects with all seven tools. Mainnet is disabled; production launch requires the separate migration and security gates below.
 
 ## Features
 
 - Seven MCP tools backed by one local signing daemon.
 - Independent WBT and USDT budgets with integer accounting and persistent reservations.
 - Encrypted dedicated agent and merchant wallets. Your browser wallet remains separate.
-- Official x402 v2 exact Permit2 authorizations and a paid API example.
+- Official x402 v2 exact payments on official test USDT, using either Permit2 or EIP-3009 `transferWithAuthorization`, plus a paid API example.
 - Durable transaction submission, retry identifiers, and receipt reconciliation.
 - Local console for setup, policy, transfers, paid requests, and activity.
 - Dark product website with four animated 3D ceramic-agent scenes, chapter-based documentation, and a configuration installation guide.
@@ -86,13 +86,13 @@ For an installed release, run `wahlet config claude`, `wahlet config cursor`, or
   "mcpServers": {
     "wahlet": {
       "command": "node",
-      "args": ["D:/Wahlet/dist/mcp/index.js"]
+      "args": ["/absolute/path/to/Wahlet/dist/mcp/index.js"]
     }
   }
 }
 ```
 
-The stdio process connects to the running local daemon. It does not run tests, start another signer, or reset budgets. Start with: "Check my Wahlet balances and show my spending report."
+Confirm the build without a running daemon with `npm run check:mcp`. It lists the seven tools and never calls one. The stdio process connects to the running local daemon. It does not run tests, start another signer, or reset budgets. Start with: "Check my Wahlet balances and show my spending report."
 
 ### Try it in your assistant
 
@@ -110,7 +110,7 @@ Open `/install` in the running website for Claude Desktop, Claude Code, Codex, C
 
 > Use Wahlet x402_fetch to fetch http://127.0.0.1:4021/premium/insight once. Pay only if the offer is 0.001 USDT on Whitechain Sepolia and my policy permits it. Return the resource, operation ID, and transaction receipt. If interrupted, reuse the same operation ID.
 
-An external paid API must offer the configured network, token, and payment scheme, and its HTTPS origin must be approved locally. A public demo on another chain cannot replace this example merely because it uses x402. A facilitator settles payments; it is not itself the paid resource endpoint.
+An external paid API must offer the configured network, official token, and exact scheme with Permit2 or EIP-3009, and its HTTPS origin must be approved locally. For EIP-3009 offers, Wahlet only signs when the offered token domain reproduces the on-chain `DOMAIN_SEPARATOR`, and it accepts settlement only when the token reports the signed nonce as used. A public demo on another chain cannot replace this example merely because it uses x402. A facilitator settles payments; it is not itself the paid resource endpoint.
 
 ## Network and receipts
 
@@ -135,6 +135,7 @@ These are completed acceptance transactions, not a guarantee of production readi
 | Agent USDT transfer | 0.01 USDT | [Successful transfer](https://explorer.testnet.whitechain.io/tx/0x1d7e664453bff67b62e54367b25be125339887b3e4840a96aa44d86680abfc68) |
 | ChatGPT paid API request | 0.001 USDT | [Verified purchase](https://explorer.testnet.whitechain.io/tx/0x6b1bd26ec78ba0e8644db7f1b1cc285d4cfa3845f948b0a29042dc87676680ab) |
 | Payment recovered after daemon crash | 0.001 USDT | [Original settlement](https://explorer.testnet.whitechain.io/tx/0x380ea5236c4f6da90c0bf1fbb63bfb0d91b5adf7994c3d55ea0529320dea9b2d) |
+| Independent merchant, EIP-3009, separate facilitator (2026-11-18) | 0.01 USDT | [Verified purchase](https://explorer.testnet.whitechain.io/tx/0x5ab03608b8053bf813e3adce8a24174f79f2d640a31c55abdf958f4e771b4adb) |
 
 The recovered request returned the original transaction and resource. Replaying the ChatGPT request also reused its receipt. Over-budget transfers and unapproved API origins were refused with unchanged balances and commitments.
 
@@ -169,6 +170,7 @@ docs/              Private planning and verification, kept locally
 | `npm run typecheck` | Check server and frontend types. |
 | `npm run check:invariants` | Run focused offline payment checks. |
 | `npm run doctor` | Inspect installation and read-only network readiness. |
+| `npm run check:mcp` | Start the built MCP server and list its seven tools without calling any. |
 | `npm run release:pack` | Build an allowlisted release archive with checksum and manifest. |
 
 ## Documentation
