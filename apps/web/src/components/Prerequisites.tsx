@@ -2,7 +2,7 @@ import { PreviewScope, PaymentCompatibility, RecoveryWalkthrough } from './Relea
 
 export default function Prerequisites() {
   return <section className="prerequisites"><h2>Before you connect.</h2><PreviewScope/><dl>
-    <dt>Node.js and npm</dt><dd>Install Node.js 24 or newer. Download the versioned Wahlet package and verify its checksum before installing. Windows is verified; macOS and Linux need independent acceptance.</dd>
+    <dt>Node.js and npm</dt><dd>Install Node.js 24 or newer. Download the versioned Wahlet package and verify its checksum before installing. Clean installs pass on Windows, macOS and Linux in continuous integration. Hands-on acceptance so far is on Windows.</dd>
     <dt>An MCP-compatible assistant</dt><dd>Use Claude Desktop, Claude Code, Codex, Cursor, or another stdio MCP host. ChatGPT requires workspace access to custom MCP connections and a separately configured Secure MCP Tunnel.</dd>
     <dt>A running wallet service</dt><dd>Run <code>wahlet doctor</code>, then <code>wahlet serve</code>. Keep the service running while your assistant uses the wallet. In a second terminal, open the private owner console with <code>wahlet console</code>.</dd>
     <dt>A dedicated agent wallet</dt><dd>Create an encrypted signer locally and keep its password and backup private. Set your spending policy and unlock the signer before payments. Read-only tools work without unlocking.</dd>
