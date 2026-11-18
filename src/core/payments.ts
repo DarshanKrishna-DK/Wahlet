@@ -111,7 +111,12 @@ export class Payments {
     }
     const response = await safeFetch(resource, origins, header);
     const encoded = response.headers['payment-response'];
-    if (!encoded) return { paid: false, state: this.wallet.ledger.get(id)?.state, status: response.status, body: response.body.slice(0, 16000), message: 'No settlement proof returned. Authorization remains reserved' };
+    if (!encoded) {
+      const settled = this.wallet.ledger.get(id);
+      // A merchant that does not cache receipts rejects the reused authorization; the recorded settlement still stands and nothing is charged again.
+      if (settled?.hash && (settled.state === 'confirmed' || settled.state === 'delivered')) return { paid: true, replayed: true, amount: display(settled.amount, 'USDT'), asset: 'USDT', transaction: settled.hash, explorer: explorer(settled.hash), state: settled.state, status: response.status, body: response.body.slice(0, 16000), message: 'Already settled for this operation ID. No new charge. The merchant did not resend the resource' };
+      return { paid: false, state: settled?.state, status: response.status, body: response.body.slice(0, 16000), message: 'No settlement proof returned. Authorization remains reserved' };
+    }
     const proof = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8')) as { success: boolean; network: string; transaction: string; payer: string };
     if (!proof.success || proof.network !== 'eip155:1874' || !/^0x[0-9a-fA-F]{64}$/.test(proof.transaction)) throw new Error('Merchant did not return a valid settlement receipt');
     const receipt = await publicClient.getTransactionReceipt({ hash: proof.transaction as Hex });
