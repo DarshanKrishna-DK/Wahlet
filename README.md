@@ -7,7 +7,7 @@
 
 Wahlet gives an MCP agent a dedicated wallet for WBT transfers, official test USDT transfers, and paid API requests. You control per-payment limits, daily budgets, approved API origins, and when the signer is unlocked. The payment service and encrypted wallet stay on your machine.
 
-**Release status:** Whitechain Sepolia developer preview. Local-first testnet acceptance is verified, including a paid request to an independently operated x402 merchant settled by a separate facilitator. Real transfers, paid API delivery, same-operation replay, restart and crash recovery, browser-wallet refusal flows, responsive layouts, and reduced motion have been exercised. ChatGPT completed a real purchase through the private MCP tunnel. Cursor connects with all seven tools. Mainnet is disabled; production launch requires the separate migration and security gates below.
+**Release status:** Whitechain Sepolia developer preview. Local-first testnet acceptance is verified with the included merchant. Qualification of an independently operated merchant and facilitator is still open. Real transfers, paid API delivery, same-operation replay, restart and crash recovery, browser-wallet refusal flows, responsive layouts, and reduced motion have been exercised. ChatGPT completed a real purchase through the private MCP tunnel. Cursor connects with all seven tools. Mainnet is disabled; production launch requires the separate migration and security gates below.
 
 ## Features
 
@@ -135,7 +135,6 @@ These are completed acceptance transactions, not a guarantee of production readi
 | Agent USDT transfer | 0.01 USDT | [Successful transfer](https://explorer.testnet.whitechain.io/tx/0x1d7e664453bff67b62e54367b25be125339887b3e4840a96aa44d86680abfc68) |
 | ChatGPT paid API request | 0.001 USDT | [Verified purchase](https://explorer.testnet.whitechain.io/tx/0x6b1bd26ec78ba0e8644db7f1b1cc285d4cfa3845f948b0a29042dc87676680ab) |
 | Payment recovered after daemon crash | 0.001 USDT | [Original settlement](https://explorer.testnet.whitechain.io/tx/0x380ea5236c4f6da90c0bf1fbb63bfb0d91b5adf7994c3d55ea0529320dea9b2d) |
-| Independent merchant, EIP-3009, separate facilitator (2026-11-18) | 0.01 USDT | [Verified purchase](https://explorer.testnet.whitechain.io/tx/0x5ab03608b8053bf813e3adce8a24174f79f2d640a31c55abdf958f4e771b4adb) |
 
 The recovered request returned the original transaction and resource. Replaying the ChatGPT request also reused its receipt. Over-budget transfers and unapproved API origins were refused with unchanged balances and commitments.
 

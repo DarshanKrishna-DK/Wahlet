@@ -4,7 +4,7 @@ import AnatomyScene from './AnatomyScene';
 const release = 'https://github.com/DarshanKrishna-DK/Wahlet/releases/tag/v0.2.0';
 
 export function PreviewScope() {
-  return <div className="preview-scope"><span className="preview-marker" aria-hidden="true"/><div><strong>Whitechain Sepolia developer preview</strong><p>Chain 1874. Test tokens only. Mainnet payments are disabled. The included paid API and one independently operated merchant with a separate facilitator are verified on testnet.</p></div></div>;
+  return <div className="preview-scope"><span className="preview-marker" aria-hidden="true"/><div><strong>Whitechain Sepolia developer preview</strong><p>Chain 1874. Test tokens only. Mainnet payments are disabled. The included paid API is verified; independent merchant interoperability is still being qualified.</p></div></div>;
 }
 
 export default function ReleaseOnboarding() {
